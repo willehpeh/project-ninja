@@ -2,7 +2,7 @@
   "name": "ui-elements",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/ui-elements/src",
-  "prefix": "lib",
+  "prefix": "ninja",
   "projectType": "library",
   "tags": [],
   "targets": {
