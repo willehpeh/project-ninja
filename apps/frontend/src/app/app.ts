@@ -9,9 +9,11 @@ import { Header } from '@ninja-4-vs/ui-elements';
   ],
   selector: 'ninja-root',
   template: `
-    <ninja-header />
-    <div class="p-6 max-w-screen-xl mx-auto">
-      <router-outlet />
+    <div class="flex h-svh flex-col">
+      <ninja-header />
+      <div class="p-6 w-full max-w-screen-xl mx-auto flex-grow">
+        <router-outlet />
+      </div>
     </div>
   `
 })
