@@ -8,7 +8,10 @@ import { provideHttpClient } from '@angular/common/http';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZonelessChangeDetection(),
-    provideRouter([]),
+    provideRouter([
+      { path: 'delivery', loadChildren: () => import('./delivery/delivery.routes').then(m => m.deliveryRoutes) },
+      { path: '', redirectTo: '/delivery', pathMatch: 'full' },
+    ]),
     provideHttpClient(),
     provideStore(),
     provideStoreDevtools({
