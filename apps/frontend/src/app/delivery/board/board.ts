@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 
 @Component({
   selector: 'ninja-board',
-  template: ``
+  template: `
+    
+  `
 })
 export class Board {}
