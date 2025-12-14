@@ -25,18 +25,3 @@ Still gonna try? You bet your bonnet I am.
 Project Ninja is very much a __WORK IN PROGRESS__ and, being licensed under the GPL, provides absolutely no warranty whatsoever. It may never be fit for purpose, but I really hope it will be someday.
 
 Enjoy!
-
-## The stack ##
-This is an NX monorepo, using (as long as I remember to keep this up to date):
-- [Nx](https://nx.dev/)
-- [Angular](https://angular.io/)
-- [NestJS](https://nestjs.com/)
-- [Docker](https://www.docker.com/)
-- [Jest](https://jestjs.io/)
-- [ESLint](https://eslint.org/)
-- [Nginx](https://www.nginx.com/)
-- [Traefik](https://traefik.io/)
-
-## The architecture ##
-There is a single frontend app and a single backend API. The API uses packages that follow something resembling Clean Architecture,
-DDD, CQRS, and Event Sourcing.
