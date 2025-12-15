@@ -1,6 +1,20 @@
 # Project Ninja
    > _Because Ninja Is Not JirA_
 
+Project Ninja is a simple, lightweight product lifecycle management tool.
+
+Project Ninja is very much a __WORK IN PROGRESS__ and, being licensed under the GPL, provides absolutely no warranty whatsoever. It may never be fit for purpose, but I really hope it will be someday.
+
+Currently, all you can do is move some pre-existing cards around between columns. That's it. I'm working on it.
+## Running Project Ninja
+Docker is required to run Project Ninja. Run the following command from the project root:
+
+```bash
+docker compose up -d --build
+```
+The frontend app will be available at https://localhost. The SSL certificate is self-signed, so your browser will warn you it's not a trusted certificate. You can proceed to the site by clicking "Advanced" and then "Proceed to localhost (unsafe)".
+## Background
+
 I once met a developer who felt that Jira and Azure DevOps were fit for purpose. __Once.__ 
 
 As far as I can tell, everybody else except management _hates_ Jira and is at best ambivalent about Azure DevOps. I firmly believe that a large part of the
@@ -21,7 +35,5 @@ This tool is licensed under GPLv3, meaning it's FOSS and no-one (including mysel
 Atlassian and Microsoft: I want them to __lose their undeserved cashflow__. Petty? Absolutely. Feasible? Probably not.
 
 Still gonna try? You bet your bonnet I am.
-
-Project Ninja is very much a __WORK IN PROGRESS__ and, being licensed under the GPL, provides absolutely no warranty whatsoever. It may never be fit for purpose, but I really hope it will be someday.
 
 Enjoy!
