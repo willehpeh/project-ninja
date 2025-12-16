@@ -7,13 +7,6 @@ services:
       - "3000"
     depends_on:
       - kurrentdb.db
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`localhost`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.api.tls=true"
-      - "traefik.http.routers.api.middlewares=api-stripprefix"
-      - "traefik.http.middlewares.api-stripprefix.stripprefix.prefixes=/api"
-      - "traefik.http.services.api.loadbalancer.server.port=3000"
 
   frontend:
     build:
@@ -21,11 +14,6 @@ services:
       dockerfile: apps/frontend/Dockerfile
     expose:
       - "80"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
-      - "traefik.http.routers.frontend.tls=true"
-      - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
   kurrentdb.db:
     image: docker.kurrent.io/kurrent-latest/kurrentdb:latest
@@ -39,11 +27,6 @@ services:
       - KURRENTDB_ENABLE_ATOM_PUB_OVER_HTTP=true
     expose:
       - "2113"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.kurrentdb.rule=Host(`kurrentdb.localhost`)"
-      - "traefik.http.routers.kurrentdb.tls=true"
-      - "traefik.http.services.kurrentdb.loadbalancer.server.port=2113"
     volumes:
       - type: volume
         source: kurrentdb-volume-data
