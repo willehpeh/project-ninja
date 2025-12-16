@@ -1,8 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.1
-    environment:
-      - DOCKER_API_VERSION=1.45
+    image: traefik:v3.2
     ports:
       - "80:80"
       - "443:443"
@@ -15,7 +13,6 @@ services:
       - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.tls=true"
-
   api:
     build:
       context: .
