@@ -42,7 +42,7 @@ export class Board {
     this.colRects().forEach((rect, column) => {
       if (this.pointIsInRect(point, rect)) {
         console.log(column.nativeElement.id);
-        column.nativeElement.classList.remove('bg-blue-50');
+        this.unhighlightColumn(column);
       }
     });
   }
@@ -52,12 +52,18 @@ export class Board {
   }
 
   protected onDragMoveCard(point: Point): void {
-    this.colRects().forEach((rect, column) => {
-      if (this.pointIsInRect(point, rect)) {
-        column.nativeElement.classList.add('bg-blue-50');
-        return;
-      }
-      column.nativeElement.classList.remove('bg-blue-50');
-    });
+    this.colRects().forEach((rect, column) => this.highlightIfPointInRect(point, rect, column));
+  }
+
+  private highlightIfPointInRect(point: Point, rect: DOMRect, column: ElementRef<HTMLElement>): void {
+    return this.pointIsInRect(point, rect) ? this.highlightColumn(column) : this.unhighlightColumn(column);
+  }
+
+  private unhighlightColumn(column: ElementRef<HTMLElement>): void {
+    column.nativeElement.classList.remove('bg-blue-50');
+  }
+
+  private highlightColumn(column: ElementRef<HTMLElement>): void {
+    column.nativeElement.classList.add('bg-blue-50');
   }
 }
