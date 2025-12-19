@@ -12,8 +12,8 @@ services:
     build:
       context: .
       dockerfile: apps/frontend/Dockerfile
-    expose:
-      - "80"
+    ports:
+      - "80:80"
 
   kurrentdb.db:
     image: docker.kurrent.io/kurrent-latest/kurrentdb:latest
