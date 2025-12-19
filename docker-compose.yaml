@@ -10,7 +10,7 @@ services:
       - ./traefik/certs:/certs:ro
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dashboard.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.dashboard.rule=HostRegexp(`^traefik\\..*`)"
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.tls=true"
   api:
@@ -23,11 +23,12 @@ services:
       - kurrentdb.db
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
       - "traefik.http.routers.api.tls=true"
       - "traefik.http.routers.api.middlewares=api-stripprefix"
       - "traefik.http.middlewares.api-stripprefix.stripprefix.prefixes=/api"
       - "traefik.http.services.api.loadbalancer.server.port=3000"
+      - "traefik.http.routers.api.priority=100"
 
   frontend:
     build:
@@ -37,9 +38,10 @@ services:
       - "80"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
       - "traefik.http.routers.frontend.tls=true"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.frontend.priority=1"
 
   kurrentdb.db:
     image: docker.kurrent.io/kurrent-latest/kurrentdb:latest
@@ -55,7 +57,7 @@ services:
       - "2113"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.kurrentdb.rule=Host(`kurrentdb.localhost`)"
+      - "traefik.http.routers.kurrentdb.rule=HostRegexp(`^kurrentdb\\..*`)"
       - "traefik.http.routers.kurrentdb.tls=true"
       - "traefik.http.services.kurrentdb.loadbalancer.server.port=2113"
     volumes:
