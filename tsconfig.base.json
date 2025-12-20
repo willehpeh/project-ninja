@@ -19,7 +19,6 @@
       "@ninja-4-vs/domain": ["packages/domain/src/index.ts"],
       "@ninja-4-vs/application": ["packages/application/src/index.ts"],
       "@ninja-4-vs/infrastructure": ["packages/infrastructure/src/index.ts"],
-      "@ninja-4-vs/tests": ["tests/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
