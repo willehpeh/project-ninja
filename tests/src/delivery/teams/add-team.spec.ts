@@ -1,4 +1,3 @@
-import { TeamAdded } from '@ninja-4-vs/domain';
 import { AddTeamCommand, AddTeamCommandHandler } from '@ninja-4-vs/application';
 import { FakeEventStore } from '../../common/fixtures/fake.event-store';
 
@@ -9,7 +8,8 @@ describe('Add Team', () => {
 
   beforeEach(() => {
     fakeEventStore = new FakeEventStore();
-    handler = new AddTeamCommandHandler(fakeEventStore);
+    const authContext = { userId: 'user1', permissions: [] };
+    handler = new AddTeamCommandHandler(fakeEventStore, authContext);
   });
 
   it('should add a new team', async () => {
@@ -19,11 +19,14 @@ describe('Add Team', () => {
       description: 'Team 1 description'
     });
     await handler.execute(command);
-    const expectedEvent: TeamAdded = {
-      type: 'TeamAdded',
-      id: '1',
-      name: 'Team 1',
-      description: 'Team 1 description'
+
+    const expectedEvent = {
+      payload: {
+        type: 'TeamAdded',
+        id: '1',
+        name: 'Team 1',
+        description: 'Team 1 description'
+      }, metadata: { userId: 'user1' }
     };
 
     expect(fakeEventStore.events).toEqual([expectedEvent]);

@@ -1,3 +1,3 @@
 export abstract class EventStore {
-  abstract append(event: unknown): Promise<void>;
+  abstract append(event: unknown, userId: string): Promise<void>;
 }
