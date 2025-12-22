@@ -1,1 +1,1 @@
-export * from './delivery/teams/team-added';
+export * from './lib/domain';

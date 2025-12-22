@@ -1,6 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { TeamAdded } from '@ninja-4-vs/domain';
-import { AuthContext, EventStore } from '../../../common';
+import { AuthContext, EventStore, NewEvent } from '../../../common';
 import { AddTeamCommand } from './add-team.command';
 
 @CommandHandler(AddTeamCommand)
@@ -11,11 +10,22 @@ export class AddTeamCommandHandler implements ICommandHandler<AddTeamCommand> {
   }
 
   async execute(command: AddTeamCommand): Promise<void> {
-    const event: TeamAdded = {
+    const teamsWithName = await this.store.queryByTags([`teamName:${command.props.name}`]);
+    if (teamsWithName.length > 0) {
+      return Promise.reject('Team with this name already exists');
+    }
+    const teamAddedEvent: NewEvent = {
       type: 'TeamAdded',
-      ...command.props
+      payload: command.props,
+      tags: [
+        `team:${ command.props.id }`,
+        `teamName:${ command.props.name }`
+      ],
+      meta: {
+        user: this.authContext.userId
+      }
     };
-    await this.store.append(event, this.authContext.userId);
+    await this.store.append([teamAddedEvent]);
     return Promise.resolve();
   }
 }
