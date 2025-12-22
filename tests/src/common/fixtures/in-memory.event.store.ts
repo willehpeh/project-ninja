@@ -3,7 +3,13 @@ import { AppendCondition, AppendResult, EventStore, NewEvent, StoredEvent } from
 export class InMemoryEventStore implements EventStore {
   events: StoredEvent[] = [];
 
-  append(events: NewEvent[], condition?: AppendCondition): Promise<AppendResult> {
+  async append(events: NewEvent[], condition?: AppendCondition): Promise<AppendResult> {
+    if (condition) {
+      const lastPositionForTags = await this.getLastPositionForTags(condition.tags);
+      if (lastPositionForTags !== condition.expectedLastPosition) {
+        throw new Error('Concurrency conflict');
+      }
+    }
     const timestamp = new Date().toISOString();
     const currentLastPosition = this.events.length;
     this.events = [...this.events, ...events.map((e, i) => ({ position: currentLastPosition + i + 1, timestamp, ...e }))];

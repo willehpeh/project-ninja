@@ -10,10 +10,6 @@ export class AddTeamCommandHandler implements ICommandHandler<AddTeamCommand> {
   }
 
   async execute(command: AddTeamCommand): Promise<void> {
-    const teamsWithName = await this.store.queryByTags([`teamName:${command.props.name}`]);
-    if (teamsWithName.length > 0) {
-      return Promise.reject('Team with this name already exists');
-    }
     const teamAddedEvent: NewEvent = {
       type: 'TeamAdded',
       payload: command.props,
@@ -25,7 +21,8 @@ export class AddTeamCommandHandler implements ICommandHandler<AddTeamCommand> {
         user: this.authContext.userId
       }
     };
-    await this.store.append([teamAddedEvent]);
+    const condition = { tags: [`teamName:${ command.props.name }`], expectedLastPosition: 0 };
+    await this.store.append([teamAddedEvent], condition);
     return Promise.resolve();
   }
 }
