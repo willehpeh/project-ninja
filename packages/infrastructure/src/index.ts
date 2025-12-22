@@ -1,1 +1,1 @@
-export * from './lib/infrastructure';
+export * from './event-store/jsonl.event-store';
