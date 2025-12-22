@@ -41,6 +41,10 @@ export default [
             {
               sourceTag: 'layer:tests',
               onlyDependOnLibsWithTags: ['layer:domain', 'layer:application', 'layer:infrastructure']
+            },
+            {
+              sourceTag: 'layer:api',
+              onlyDependOnLibsWithTags: ['layer:application', 'layer:infrastructure']
             }
           ]
         }
