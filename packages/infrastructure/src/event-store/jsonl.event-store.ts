@@ -27,8 +27,8 @@ export class JsonlEventStore implements EventStore {
   }
 
   async append(events: NewEvent[], condition?: AppendCondition): Promise<AppendResult> {
-    const storedEvents = this.convertToStoredEventStrings(events);
-    await this.writeEventsToStore(storedEvents);
+    const storedEventsString = this.convertToStoredEventsString(events);
+    await this.writeEventsToStore(storedEventsString);
 
     return {
       lastPosition: this.globalPosition,
@@ -93,15 +93,11 @@ export class JsonlEventStore implements EventStore {
     return readFile(this.eventsFilePath, 'utf-8');
   }
 
-  private async writeEventsToStore(storedEvents: string[]): Promise<void> {
-    return appendFile(this.eventsFilePath, this.eventsArrayAsString(storedEvents));
+  private async writeEventsToStore(storedEventsString: string): Promise<void> {
+    return appendFile(this.eventsFilePath, storedEventsString);
   }
 
-  private eventsArrayAsString(storedEvents: string[]): string {
-    return storedEvents.join('\n') + '\n';
-  }
-
-  private convertToStoredEventStrings(events: NewEvent[]): string[] {
+  private convertToStoredEventsString(events: NewEvent[]): string {
     const lines: string[] = [];
 
     for (const event of events) {
@@ -110,7 +106,7 @@ export class JsonlEventStore implements EventStore {
       lines.push(this.eventAsString(stored));
     }
 
-    return lines;
+    return lines.join('\n') + '\n';
   }
 
   private eventAsString(stored: StoredEvent): string {
