@@ -24,8 +24,9 @@ export class EventStoreFile {
     return appendFile(this.filePath, content);
   }
 
-  async read(): Promise<string> {
-    return readFile(this.filePath, 'utf-8');
+  async readLines(): Promise<string[]> {
+    const content = await readFile(this.filePath, 'utf-8');
+    return content.split('\n').filter(line => line.trim());
   }
 
   private makeDataFolder(basePath: string): void {

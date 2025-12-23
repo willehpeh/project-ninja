@@ -43,14 +43,10 @@ export class JsonlEventStore implements EventStore {
   }
 
   async readAll(fromPosition?: number, limit?: number): Promise<StoredEvent[]> {
-    const content = await this.eventStoreFile.read();
+    const lines = await this.eventStoreFile.readLines();
     const events: StoredEvent[] = [];
 
-    for (const line of this.fileLines(content)) {
-      if (this.isEmpty(line)) {
-        continue;
-      }
-
+    for (const line of lines) {
       const event: StoredEvent = JSON.parse(line);
 
       if (this.eventBeforePosition(event, fromPosition)) {
@@ -64,15 +60,7 @@ export class JsonlEventStore implements EventStore {
       }
     }
 
-    return Promise.resolve(events);
-  }
-
-  private fileLines(content: string): string[] {
-    return content.split('\n');
-  }
-
-  private isEmpty(line: string): boolean {
-    return !line.trim();
+    return events;
   }
 
   private hasSufficientEvents(limit: number | undefined, events: StoredEvent[]): boolean {
