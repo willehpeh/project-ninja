@@ -102,23 +102,18 @@ export class JsonlEventStore implements EventStore {
 
     for (const event of events) {
       this.globalPosition++;
-      const stored: StoredEvent = this.toStoredEvent(event);
-      lines.push(this.eventAsString(stored));
+      lines.push(this.toStoredEventString(event));
     }
 
     return lines.join('\n') + '\n';
   }
 
-  private eventAsString(stored: StoredEvent): string {
-    return JSON.stringify(stored);
-  }
-
-  private toStoredEvent(event: NewEvent<unknown>): StoredEvent {
-    return {
+  private toStoredEventString(event: NewEvent<unknown>): string {
+    return JSON.stringify({
       position: this.globalPosition,
       timestamp: new Date().toISOString(),
       ...event
-    };
+    });
   }
 
   private setEventFilePath(): void {
