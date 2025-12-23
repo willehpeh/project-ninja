@@ -16,36 +16,19 @@ export class JsonlEventStore implements EventStore {
   }
 
   async init(): Promise<void> {
-    this.eventsFilePath = join(this.opts.basePath, 'events.jsonl');
-    this.createDataFolderIfDoesntExist(this.opts.basePath);
-    if (existsSync(this.eventsFilePath)) {
-      const events = await this.readAll();
-      if (events.length > 0) {
-        this.globalPosition = events[events.length - 1].position;
-      }
+    if (this.dataFolderDoesntExist()) {
+      this.makeDataFolder(this.opts.basePath);
     }
-    return Promise.resolve();
+    this.setEventFilePath();
+    if (this.eventFileAlreadyExists()) {
+      await this.setGlobalPositionFromEvents();
+    }
+    return;
   }
 
   async append(events: NewEvent[], condition?: AppendCondition): Promise<AppendResult> {
-    const lines: string[] = [];
-
-    for (const event of events) {
-      this.globalPosition++;
-
-      const stored: StoredEvent = {
-        position: this.globalPosition,
-        timestamp: new Date().toISOString(),
-        type: event.type,
-        tags: event.tags,
-        payload: event.payload,
-        meta: event.meta
-      };
-
-      lines.push(JSON.stringify(stored));
-    }
-
-    await appendFile(this.eventsFilePath, lines.join('\n') + '\n');
+    const storedEvents = this.convertToStoredEventStrings(events);
+    await this.writeEventsToStore(storedEvents);
 
     return {
       lastPosition: this.globalPosition,
@@ -66,23 +49,23 @@ export class JsonlEventStore implements EventStore {
   }
 
   async readAll(fromPosition?: number, limit?: number): Promise<StoredEvent[]> {
-    const content = await readFile(this.eventsFilePath, 'utf-8');
+    const content = await this.readEventFile();
     const events: StoredEvent[] = [];
 
-    for (const line of content.split('\n')) {
-      if (!line.trim()) {
+    for (const line of this.fileLines(content)) {
+      if (this.isEmpty(line)) {
         continue;
       }
 
       const event: StoredEvent = JSON.parse(line);
 
-      if (fromPosition && event.position < fromPosition) {
+      if (this.eventBeforePosition(event, fromPosition)) {
         continue;
       }
 
       events.push(event);
 
-      if (limit && events.length >= limit) {
+      if (this.hasSufficientEvents(limit, events)) {
         break;
       }
     }
@@ -90,11 +73,78 @@ export class JsonlEventStore implements EventStore {
     return Promise.resolve(events);
   }
 
-  private createDataFolderIfDoesntExist(basePath: string) {
-    if (!existsSync(this.opts.basePath)) {
-      mkdirSync(basePath, { recursive: true });
-      return;
+  private fileLines(content: string): string[] {
+    return content.split('\n');
+  }
+
+  private isEmpty(line: string): boolean {
+    return !line.trim();
+  }
+
+  private hasSufficientEvents(limit: number | undefined, events: StoredEvent[]): boolean {
+    return !!limit && events.length >= limit;
+  }
+
+  private eventBeforePosition(event: StoredEvent, fromPosition?: number): boolean {
+    return !!fromPosition && event.position < fromPosition;
+  }
+
+  private async readEventFile(): Promise<string> {
+    return readFile(this.eventsFilePath, 'utf-8');
+  }
+
+  private async writeEventsToStore(storedEvents: string[]): Promise<void> {
+    return appendFile(this.eventsFilePath, this.eventsArrayAsString(storedEvents));
+  }
+
+  private eventsArrayAsString(storedEvents: string[]): string {
+    return storedEvents.join('\n') + '\n';
+  }
+
+  private convertToStoredEventStrings(events: NewEvent[]): string[] {
+    const lines: string[] = [];
+
+    for (const event of events) {
+      this.globalPosition++;
+      const stored: StoredEvent = this.toStoredEvent(event);
+      lines.push(this.eventAsString(stored));
+    }
+
+    return lines;
+  }
+
+  private eventAsString(stored: StoredEvent): string {
+    return JSON.stringify(stored);
+  }
+
+  private toStoredEvent(event: NewEvent<unknown>): StoredEvent {
+    return {
+      position: this.globalPosition,
+      timestamp: new Date().toISOString(),
+      ...event
+    };
+  }
+
+  private setEventFilePath(): void {
+    this.eventsFilePath = join(this.opts.basePath, 'events.jsonl');
+  }
+
+  private async setGlobalPositionFromEvents(): Promise<void> {
+    const events = await this.readAll();
+    if (events.length > 0) {
+      this.globalPosition = events[events.length - 1].position;
     }
   }
 
+  private eventFileAlreadyExists(): boolean {
+    return existsSync(this.eventsFilePath);
+  }
+
+  private makeDataFolder(basePath: string): void {
+    mkdirSync(basePath, { recursive: true });
+  }
+
+  private dataFolderDoesntExist(): boolean {
+    return !existsSync(this.opts.basePath);
+  }
 }
