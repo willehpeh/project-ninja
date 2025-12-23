@@ -1,7 +1,7 @@
 import { AppendCondition, AppendResult, EventStore, NewEvent, StoredEvent } from '@ninja-4-vs/application';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
-import { appendFile } from 'fs/promises';
+import { appendFile, readFile } from 'fs/promises';
 
 type JsonlEventStoreOptions = {
   basePath: string;
@@ -9,20 +9,22 @@ type JsonlEventStoreOptions = {
 
 export class JsonlEventStore implements EventStore {
 
-  private readonly eventsFilePath: string;
+  private eventsFilePath = '';
   private globalPosition = 0;
 
   constructor(private readonly opts: JsonlEventStoreOptions) {
-    this.eventsFilePath = join(opts.basePath, 'events.jsonl');
-    this.createDataFolderIfDoesntExist(this.opts.basePath);
-
   }
 
-  private createDataFolderIfDoesntExist(basePath: string) {
-    if (!existsSync(this.opts.basePath)) {
-      mkdirSync(basePath, { recursive: true });
-      return;
+  async init(): Promise<void> {
+    this.eventsFilePath = join(this.opts.basePath, 'events.jsonl');
+    this.createDataFolderIfDoesntExist(this.opts.basePath);
+    if (existsSync(this.eventsFilePath)) {
+      const events = await this.readAll();
+      if (events.length > 0) {
+        this.globalPosition = events[events.length - 1].position;
+      }
     }
+    return Promise.resolve();
   }
 
   async append(events: NewEvent[], condition?: AppendCondition): Promise<AppendResult> {
@@ -52,7 +54,7 @@ export class JsonlEventStore implements EventStore {
   }
 
   getGlobalPosition(): Promise<number> {
-    return Promise.resolve(0);
+    return Promise.resolve(this.globalPosition);
   }
 
   getLastPositionForTags(tags: string[]): Promise<number> {
@@ -63,8 +65,36 @@ export class JsonlEventStore implements EventStore {
     return Promise.resolve([]);
   }
 
-  readAll(fromPosition?: number, limit?: number): Promise<StoredEvent[]> {
-    return Promise.resolve([]);
+  async readAll(fromPosition?: number, limit?: number): Promise<StoredEvent[]> {
+    const content = await readFile(this.eventsFilePath, 'utf-8');
+    const events: StoredEvent[] = [];
+
+    for (const line of content.split('\n')) {
+      if (!line.trim()) {
+        continue;
+      }
+
+      const event: StoredEvent = JSON.parse(line);
+
+      if (fromPosition && event.position < fromPosition) {
+        continue;
+      }
+
+      events.push(event);
+
+      if (limit && events.length >= limit) {
+        break;
+      }
+    }
+
+    return Promise.resolve(events);
+  }
+
+  private createDataFolderIfDoesntExist(basePath: string) {
+    if (!existsSync(this.opts.basePath)) {
+      mkdirSync(basePath, { recursive: true });
+      return;
+    }
   }
 
 }

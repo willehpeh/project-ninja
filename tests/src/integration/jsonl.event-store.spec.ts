@@ -1,50 +1,151 @@
 import { JsonlEventStore } from '@ninja-4-vs/infrastructure';
 import { existsSync, rmSync } from 'fs';
-import { NewEvent } from '@ninja-4-vs/application';
-import { readFile } from 'fs/promises';
+import { NewEvent, StoredEvent } from '@ninja-4-vs/application';
+import { readFile, writeFile } from 'fs/promises';
 
 describe('JSONL event store', () => {
   let eventStore: JsonlEventStore;
   const testEventFolderPath = 'tmp/data';
   const testEventFilePath = `${ testEventFolderPath }/events.jsonl`;
 
-  beforeEach(() => {
-    eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
+  describe('Appending events', () => {
+
+    beforeEach(async () => {
+      eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
+      await eventStore.init();
+    });
+
+    it('should append an event', async () => {
+      const newEvent: NewEvent = {
+        type: 'test-event',
+        tags: ['test'],
+        payload: { message: 'test' },
+        meta: {
+          user: 'test'
+        }
+      };
+      await eventStore.append([newEvent]);
+      const events = await eventsInJsonlFile();
+      expect(events).toEqual([{ ...newEvent, position: 1, timestamp: expect.any(String) }]);
+    });
+
+    it('should append multiple events', async () => {
+      const newEvents: NewEvent[] = [
+        { type: 'test-event-1', tags: ['test'], payload: { message: 'test-1' } },
+        { type: 'test-event-2', tags: ['test'], payload: { message: 'test-2' } }
+      ];
+      await eventStore.append(newEvents);
+      const events = await eventsInJsonlFile();
+      expect(events).toEqual(newEvents.map((event, index) => ({
+        ...event,
+        position: index + 1,
+        timestamp: expect.any(String)
+      })));
+    });
+
   });
 
-  it('should create the folder', () => {
-    expect(existsSync(testEventFolderPath)).toBe(true);
+  async function writeEventFileWith(existingEvents: StoredEvent[]) {
+    const fileContents = existingEvents.map(event => JSON.stringify(event)).join('\n') + '\n';
+    await writeFile(testEventFilePath, fileContents);
+  }
+
+  describe('Startup logic', () => {
+
+    it('should create the folder', async () => {
+      eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
+      await eventStore.init();
+      expect(existsSync(testEventFolderPath)).toBe(true);
+    });
+
+    it('should retrieve the global position from an existing file', async () => {
+      const existingEvents: StoredEvent[] = [
+        {
+          position: 1,
+          timestamp: '2021-01-01T00:00:00.000Z',
+          type: 'test-event',
+          tags: ['test'],
+          payload: { message: 'test' },
+          meta: { user: 'test' }
+        },
+        {
+          position: 2,
+          timestamp: '2021-01-02T00:00:00.000Z',
+          type: 'test-event-2',
+          tags: ['test'],
+          payload: { message: 'test-2' },
+        }
+      ];
+      await writeEventFileWith(existingEvents);
+      const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
+      await eventStore.init();
+      const globalPosition = await eventStore.getGlobalPosition();
+      expect(globalPosition).toBe(2);
+    });
   });
 
-  it('should append an event', async () => {
-    const newEvent: NewEvent = {
-      type: 'test-event',
-      tags: ['test'],
-      payload: { message: 'test' },
-      meta: {
-        user: 'test'
-      }
-    };
-    await eventStore.append([newEvent]);
-    const events = await eventsInJsonlFile();
-    expect(events).toEqual([{ ...newEvent, position: 1, timestamp: expect.any(String) }]);
+  describe('Querying events', () => {
+    it('should retrieve all events', async () => {
+      const existingEvents: StoredEvent[] = [
+        {
+          position: 1,
+          timestamp: '2021-01-01T00:00:00.000Z',
+          type: 'test-event',
+          tags: ['test'],
+          payload: { message: 'test' },
+          meta: { user: 'test' }
+        },
+        {
+          position: 2,
+          timestamp: '2021-01-02T00:00:00.000Z',
+          type: 'test-event-2',
+          tags: ['test'],
+          payload: { message: 'test-2' },
+        }
+      ];
+      await writeEventFileWith(existingEvents);
+      const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
+      await eventStore.init();
+      const events = await eventStore.readAll();
+      expect(events).toEqual(existingEvents);
+    });
+
+    it('should retrieve events from a given position', async () => {
+      const existingEvents: StoredEvent[] = [
+        {
+          position: 1,
+          timestamp: '2021-01-01T00:00:00.000Z',
+          type: 'test-event',
+          tags: ['test'],
+          payload: { message: 'test' },
+          meta: { user: 'test' }
+        },
+        {
+          position: 2,
+          timestamp: '2021-01-02T00:00:00.000Z',
+          type: 'test-event-2',
+          tags: ['test'],
+          payload: { message: 'test-2' },
+        }
+      ];
+      await writeEventFileWith(existingEvents);
+      const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
+      await eventStore.init();
+      const events = await eventStore.readAll(2);
+      expect(events).toEqual(existingEvents.slice(1));
+    });
   });
 
-  it('should append multiple events', async () => {
-    const newEvents: NewEvent[] = [
-      { type: 'test-event-1', tags: ['test'], payload: { message: 'test-1' } },
-      { type: 'test-event-2', tags: ['test'], payload: { message: 'test-2' } }
-    ];
-    await eventStore.append(newEvents);
-    const events = await eventsInJsonlFile();
-    expect(events).toEqual(newEvents.map((event, index) => ({ ...event, position: index + 1, timestamp: expect.any(String) })));
-  })
 
   afterEach(() => {
+    removeAllTestFiles();
+  });
+
+  function removeAllTestFiles() {
     if (existsSync(testEventFilePath)) {
       rmSync(testEventFilePath, { recursive: true });
     }
-  });
+  }
 
   async function eventsInJsonlFile() {
     const fileContents = await readFile(testEventFilePath, 'utf8');
