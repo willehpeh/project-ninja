@@ -186,6 +186,31 @@ describe('JSONL event store', () => {
     ]);
   });
 
+  it('should not retrieve events if tags do not match', async () => {
+    const existingEvents: StoredEvent[] = [
+      {
+        position: 1,
+        timestamp: '2021-01-01T00:00:00.000Z',
+        type: 'test-event',
+        tags: ['test'],
+        payload: { message: 'test' },
+        meta: { user: 'test' }
+      },
+      {
+        position: 2,
+        timestamp: '2021-01-02T00:00:00.000Z',
+        type: 'test-event-2',
+        tags: ['test'],
+        payload: { message: 'test-2' },
+      }
+    ];
+    await writeEventFileWith(existingEvents);
+    const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
+    await eventStore.init();
+
+    const events = await eventStore.queryByTags(['not-a-tag']);
+    expect(events).toEqual([]);
+  });
 
   afterEach(() => {
     removeAllTestFiles();
