@@ -38,8 +38,13 @@ export class JsonlEventStore implements EventStore {
     return Promise.resolve(0);
   }
 
-  queryByTags(tags: string[], fromPosition?: number): Promise<StoredEvent[]> {
-    return Promise.resolve([]);
+  async queryByTags(tags: string[], fromPosition?: number): Promise<StoredEvent[]> {
+    const allEvents = await this.readAll(fromPosition);
+    const tagSet = new Set(tags);
+
+    return allEvents.filter(event =>
+      event.tags.some(tag => tagSet.has(tag))
+    );
   }
 
   async readAll(fromPosition?: number, limit?: number): Promise<StoredEvent[]> {
