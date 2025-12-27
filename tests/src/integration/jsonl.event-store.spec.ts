@@ -79,7 +79,7 @@ describe('JSONL event store', () => {
       await writeEventFileWith(existingEvents);
       const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
       await eventStore.init();
-      const globalPosition = await eventStore.getGlobalPosition();
+      const globalPosition = await eventStore.globalPosition();
       expect(globalPosition).toBe(2);
     });
   });
@@ -255,7 +255,7 @@ describe('JSONL event store', () => {
     const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
     await eventStore.init();
 
-    const lastPosition = await eventStore.getLastPositionForTags(['test2']);
+    const lastPosition = await eventStore.lastPositionForTags(['test2']);
     expect(lastPosition).toEqual(5);
   })
 

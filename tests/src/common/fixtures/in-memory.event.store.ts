@@ -5,7 +5,7 @@ export class InMemoryEventStore implements EventStore {
 
   async append(events: NewEvent[], condition?: AppendCondition): Promise<AppendResult> {
     if (condition) {
-      const lastPositionForTags = await this.getLastPositionForTags(condition.tags);
+      const lastPositionForTags = await this.lastPositionForTags(condition.tags);
       if (lastPositionForTags !== condition.expectedLastPosition) {
         throw new Error('Concurrency conflict');
       }
@@ -16,11 +16,11 @@ export class InMemoryEventStore implements EventStore {
     return Promise.resolve({ lastPosition: currentLastPosition + events.length, eventsWritten: events.length });
   }
 
-  getGlobalPosition(): Promise<number> {
+  globalPosition(): Promise<number> {
     return Promise.resolve(this.events.length);
   }
 
-  async getLastPositionForTags(tags: string[]): Promise<number> {
+  async lastPositionForTags(tags: string[]): Promise<number> {
     const events = await this.queryByTags(tags);
     return events[events.length - 1]?.position ?? 0;
   }

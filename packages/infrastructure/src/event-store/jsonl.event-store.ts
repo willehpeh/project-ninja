@@ -7,34 +7,34 @@ type JsonlEventStoreOptions = {
 
 export class JsonlEventStore implements EventStore {
 
-  private globalPosition = 0;
-  private readonly eventStoreFile: EventStoreFile;
+  private _globalPosition = 0;
+  private readonly _eventStoreFile: EventStoreFile;
 
   constructor(opts: JsonlEventStoreOptions) {
-    this.eventStoreFile = new EventStoreFile(opts.basePath);
+    this._eventStoreFile = new EventStoreFile(opts.basePath);
   }
 
   async init(): Promise<void> {
-    await this.eventStoreFile.init();
+    await this._eventStoreFile.init();
     await this.setGlobalPositionFromEvents();
     return;
   }
 
   async append(events: NewEvent[], condition?: AppendCondition): Promise<AppendResult> {
     const storedEventsString = this.convertToStoredEventsString(events);
-    await this.eventStoreFile.write(storedEventsString);
+    await this._eventStoreFile.write(storedEventsString);
 
     return {
-      lastPosition: this.globalPosition,
+      lastPosition: this._globalPosition,
       eventsWritten: events.length
     };
   }
 
-  getGlobalPosition(): Promise<number> {
-    return Promise.resolve(this.globalPosition);
+  globalPosition(): Promise<number> {
+    return Promise.resolve(this._globalPosition);
   }
 
-  async getLastPositionForTags(tags: string[]): Promise<number> {
+  async lastPositionForTags(tags: string[]): Promise<number> {
     const events = await this.queryByTags(tags);
     if (events.length === 0) {
       return 0;
@@ -54,7 +54,7 @@ export class JsonlEventStore implements EventStore {
   async readAll(fromPosition?: number, limit?: number): Promise<StoredEvent[]> {
     const events: StoredEvent[] = [];
 
-    for (const line of await this.eventStoreFile.readLines()) {
+    for (const line of await this._eventStoreFile.readLines()) {
       const event: StoredEvent = JSON.parse(line);
 
       if (this.eventBeforePosition(event, fromPosition)) {
@@ -83,7 +83,7 @@ export class JsonlEventStore implements EventStore {
     const lines: string[] = [];
 
     for (const event of events) {
-      this.globalPosition++;
+      this._globalPosition++;
       lines.push(this.toStoredEventString(event));
     }
 
@@ -92,7 +92,7 @@ export class JsonlEventStore implements EventStore {
 
   private toStoredEventString(event: NewEvent<unknown>): string {
     return JSON.stringify({
-      position: this.globalPosition,
+      position: this._globalPosition,
       timestamp: new Date().toISOString(),
       ...event
     });
@@ -101,7 +101,7 @@ export class JsonlEventStore implements EventStore {
   private async setGlobalPositionFromEvents(): Promise<void> {
     const events = await this.readAll();
     if (events.length > 0) {
-      this.globalPosition = events[events.length - 1].position;
+      this._globalPosition = events[events.length - 1].position;
     }
   }
 }
