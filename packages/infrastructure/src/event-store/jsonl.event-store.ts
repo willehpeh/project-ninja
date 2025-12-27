@@ -1,4 +1,11 @@
-import { AppendCondition, AppendResult, EventStore, NewEvent, StoredEvent } from '@ninja-4-vs/application';
+import {
+  AppendCondition,
+  AppendResult,
+  ConcurrencyError,
+  EventStore,
+  NewEvent,
+  StoredEvent
+} from '@ninja-4-vs/application';
 import { EventStoreFile } from './event-store-file';
 
 type JsonlEventStoreOptions = {
@@ -21,13 +28,34 @@ export class JsonlEventStore implements EventStore {
   }
 
   async append(events: NewEvent[], condition?: AppendCondition): Promise<AppendResult> {
-    const storedEventsString = this.convertToStoredEventsString(events);
-    await this._eventStoreFile.write(storedEventsString);
+    await this._eventStoreFile.lock();
 
-    return {
-      lastPosition: this._globalPosition,
-      eventsWritten: events.length
-    };
+    try {
+      if (condition) {
+        await this.validatePositionForConditionTags(condition);
+      }
+      const storedEventsString = this.convertToStoredEventsString(events);
+      await this._eventStoreFile.write(storedEventsString);
+
+      return {
+        lastPosition: this._globalPosition,
+        eventsWritten: events.length
+      };
+    } finally {
+      await this._eventStoreFile.unlock();
+    }
+  }
+
+  private async validatePositionForConditionTags(condition: AppendCondition) {
+    const actualPosition = await this.lastPositionForTags(condition.tags);
+
+    if (actualPosition !== condition.expectedLastPosition) {
+      throw new ConcurrencyError(
+        condition.tags,
+        condition.expectedLastPosition,
+        actualPosition
+      );
+    }
   }
 
   globalPosition(): Promise<number> {

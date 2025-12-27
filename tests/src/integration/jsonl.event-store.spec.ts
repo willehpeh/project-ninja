@@ -257,7 +257,40 @@ describe('JSONL event store', () => {
 
     const lastPosition = await eventStore.lastPositionForTags(['test2']);
     expect(lastPosition).toEqual(5);
-  })
+  });
+
+  it('should fail to append an event when the expected position is before the real position', async () => {
+    const existingEvents: StoredEvent[] = [
+      {
+        position: 1,
+        timestamp: '2021-01-01T00:00:00.000Z',
+        type: 'test-event',
+        tags: ['test'],
+        payload: { message: 'test' },
+        meta: { user: 'test' }
+      },
+      {
+        position: 2,
+        timestamp: '2021-01-02T00:00:00.000Z',
+        type: 'test-event-2',
+        tags: ['test'],
+        payload: { message: 'test-2' },
+      }
+    ];
+    await writeEventFileWith(existingEvents);
+    const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
+    await eventStore.init();
+
+    const newEvent: NewEvent = {
+      type: 'test-event',
+      tags: ['test'],
+      payload: { message: 'test' },
+      meta: {
+        user: 'test'
+      }
+    };
+    await expect((eventStore.append([newEvent], { tags: ['test'], expectedLastPosition: 1 }))).rejects.toThrow();
+  });
 
   afterEach(() => {
     removeAllTestFiles();

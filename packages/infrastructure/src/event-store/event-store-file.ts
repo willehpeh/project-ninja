@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync } from 'fs';
 import { appendFile, readFile } from 'fs/promises';
 import { join } from 'path';
+import { lock, unlock } from 'proper-lockfile';
 
 export class EventStoreFile {
 
@@ -27,6 +28,14 @@ export class EventStoreFile {
   async readLines(): Promise<string[]> {
     const content = await readFile(this.filePath, 'utf-8');
     return content.split('\n').filter(line => line.trim());
+  }
+
+  async lock(retries = 5): Promise<void> {
+    await lock(this.filePath, { retries });
+  }
+
+  async unlock(): Promise<void> {
+    await unlock(this.filePath);
   }
 
   private makeDataFolder(basePath: string): void {
