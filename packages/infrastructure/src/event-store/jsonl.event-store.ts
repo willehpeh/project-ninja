@@ -34,8 +34,12 @@ export class JsonlEventStore implements EventStore {
     return Promise.resolve(this.globalPosition);
   }
 
-  getLastPositionForTags(tags: string[]): Promise<number> {
-    return Promise.resolve(0);
+  async getLastPositionForTags(tags: string[]): Promise<number> {
+    const events = await this.queryByTags(tags);
+    if (events.length === 0) {
+      return 0;
+    }
+    return events[events.length - 1].position;
   }
 
   async queryByTags(tags: string[], fromPosition?: number): Promise<StoredEvent[]> {
