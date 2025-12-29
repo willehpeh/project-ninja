@@ -1,3 +1,12 @@
-import { StoredEvent } from './stored-event';
+export interface EventMetadata {
+  readonly correlationId?: string;
+  readonly causationId?: string;
+  readonly [key: string]: unknown;
+}
 
-export type NewEvent<T = unknown> = Omit<StoredEvent<T>, 'position' | 'timestamp'>;
+export type NewEvent<T = unknown> = {
+  readonly type: string;
+  readonly tags: string[];
+  readonly payload: T;
+  readonly meta?: EventMetadata;
+};
