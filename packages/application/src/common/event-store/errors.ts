@@ -2,7 +2,7 @@ export class ConcurrencyError extends Error {
   constructor(
     public readonly tags: string[],
     public readonly expectedPosition: number,
-    public readonly actualPosition: number
+    public readonly actualPosition: number | undefined
   ) {
     super(
       `Concurrency conflict: expected position ${expectedPosition} for tags [${tags.join(', ')}], found ${actualPosition}`

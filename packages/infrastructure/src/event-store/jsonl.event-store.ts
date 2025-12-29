@@ -34,11 +34,15 @@ export class JsonlEventStore implements EventStore {
       if (condition) {
         await this.validatePositionForConditionTags(condition);
       }
-      const storedEventsString = this.convertToStoredEventsString(events);
+      const startPosition = this._globalPosition;
+      const storedEventsString = this.convertToStoredEventsString(events, startPosition);
       await this._eventStoreFile.write(storedEventsString);
 
+      const newPosition = startPosition + events.length;
+      this._globalPosition = newPosition;
+
       return {
-        lastPosition: this._globalPosition,
+        lastPosition: newPosition,
         eventsWritten: events.length
       };
     } finally {
@@ -62,10 +66,10 @@ export class JsonlEventStore implements EventStore {
     return Promise.resolve(this._globalPosition);
   }
 
-  async lastPositionForTags(tags: string[]): Promise<number> {
+  async lastPositionForTags(tags: string[]): Promise<number | undefined> {
     const events = await this.queryByTags(tags);
     if (events.length === 0) {
-      return 0;
+      return undefined;
     }
     return events[events.length - 1].position;
   }
@@ -107,20 +111,20 @@ export class JsonlEventStore implements EventStore {
     return !!fromPosition && event.position < fromPosition;
   }
 
-  private convertToStoredEventsString(events: NewEvent[]): string {
+  private convertToStoredEventsString(events: NewEvent[], startPosition: number): string {
     const lines: string[] = [];
 
-    for (const event of events) {
-      this._globalPosition++;
-      lines.push(this.toStoredEventString(event));
+    for (let i = 0; i < events.length; i++) {
+      const position = startPosition + i + 1;
+      lines.push(this.toStoredEventString(events[i], position));
     }
 
     return lines.join('\n') + '\n';
   }
 
-  private toStoredEventString(event: NewEvent<unknown>): string {
+  private toStoredEventString(event: NewEvent<unknown>, position: number): string {
     return JSON.stringify({
-      position: this._globalPosition,
+      position,
       timestamp: new Date().toISOString(),
       ...event
     });
