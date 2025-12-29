@@ -27,11 +27,11 @@ export class JsonlEventStore implements EventStore {
     return;
   }
 
-  async append(events: NewEvent[], condition?: AppendCondition): Promise<AppendResult> {
+  async append(events: NewEvent[], condition: AppendCondition = AppendCondition.none()): Promise<AppendResult> {
     await this._eventStoreFile.lock();
 
     try {
-      if (condition) {
+      if (condition.expectedLastPosition > 0) {
         await this.validatePositionForConditionTags(condition);
       }
       const startPosition = this._globalPosition;
