@@ -86,29 +86,12 @@ export class JsonlEventStore implements EventStore {
   async readAll(fromPosition?: number, limit?: number): Promise<StoredEvent[]> {
     const events: StoredEvent[] = [];
 
-    for (const line of await this._eventStoreFile.readLines()) {
+    for await (const line of this._eventStoreFile.readLines(fromPosition, limit)) {
       const event: StoredEvent = JSON.parse(line);
-
-      if (this.eventBeforePosition(event, fromPosition)) {
-        continue;
-      }
-
       events.push(event);
-
-      if (this.hasSufficientEvents(limit, events)) {
-        break;
-      }
     }
 
     return events;
-  }
-
-  private hasSufficientEvents(limit: number | undefined, events: StoredEvent[]): boolean {
-    return !!limit && events.length >= limit;
-  }
-
-  private eventBeforePosition(event: StoredEvent, fromPosition?: number): boolean {
-    return !!fromPosition && event.position < fromPosition;
   }
 
   private convertToStoredEventsString(events: NewEvent[], startPosition: number): string {

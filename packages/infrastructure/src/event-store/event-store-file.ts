@@ -1,7 +1,8 @@
-import { existsSync, mkdirSync } from 'fs';
-import { appendFile, readFile } from 'fs/promises';
+import { createReadStream, existsSync, mkdirSync } from 'fs';
+import { appendFile } from 'fs/promises';
 import { join } from 'path';
 import { lock, unlock } from 'proper-lockfile';
+import { createInterface } from 'readline';
 
 export class EventStoreFile {
 
@@ -25,9 +26,26 @@ export class EventStoreFile {
     return appendFile(this.filePath, content);
   }
 
-  async readLines(): Promise<string[]> {
-    const content = await readFile(this.filePath, 'utf-8');
-    return content.split('\n').filter(line => line.trim());
+  async *readLines(fromPosition?: number, limit?: number): AsyncIterable<string> {
+    const rl = createInterface({
+      input: createReadStream(this.filePath),
+      crlfDelay: Infinity
+    });
+
+    let position = 0;
+    let yielded = 0;
+
+    for await (const line of rl) {
+      position++;
+
+      if (fromPosition && position < fromPosition) continue;
+      if (!line.trim()) continue;
+
+      yield line;
+      yielded++;
+
+      if (limit && yielded >= limit) break;
+    }
   }
 
   async lock(retries = 5): Promise<void> {
