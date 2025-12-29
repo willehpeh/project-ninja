@@ -1,4 +1,11 @@
-import { AppendCondition, AppendResult, CorruptionError, EventStore, NewEvent, StoredEvent } from '@ninja-4-vs/application';
+import {
+  AppendCondition,
+  AppendResult,
+  CorruptionError,
+  EventStore,
+  NewEvent,
+  StoredEvent
+} from '@ninja-4-vs/application';
 import { EventStoreFile } from './event-store-file';
 
 type JsonlEventStoreOptions = {
@@ -24,7 +31,7 @@ export class JsonlEventStore implements EventStore {
 
     try {
       condition.checkIfMetForPosition(await this.lastPositionForTags(condition.tags));
-      await this._eventStoreFile.write(this.toStoredEvents(events, this._globalPosition));
+      await this._eventStoreFile.write(this.serialize(events, this._globalPosition));
       this._globalPosition += events.length;
 
       return {
@@ -69,23 +76,14 @@ export class JsonlEventStore implements EventStore {
     });
   }
 
-  private toStoredEvents(events: NewEvent[], startPosition: number): string {
-    const lines: string[] = [];
-
-    for (let i = 0; i < events.length; i++) {
-      const position = startPosition + i + 1;
-      lines.push(this.toStoredEventString(events[i], position));
-    }
-
-    return lines.join('\n') + '\n';
-  }
-
-  private toStoredEventString(event: NewEvent<unknown>, position: number): string {
-    return JSON.stringify({
-      position,
-      timestamp: new Date().toISOString(),
-      ...event
-    });
+  private serialize(events: NewEvent[], startPosition: number): string {
+    return events
+      .map((event, i) => JSON.stringify({
+        position: startPosition + i + 1,
+        timestamp: new Date().toISOString(),
+        ...(event)
+      }))
+      .join('\n') + '\n';
   }
 
   private async setGlobalPositionFromEvents(): Promise<void> {
