@@ -6,19 +6,20 @@ import { createInterface } from 'readline';
 
 export class EventStoreFile {
 
-  private filePath = '';
+  private constructor(private readonly filePath: string) {}
 
-  constructor(private readonly basePath: string) {
-  }
+  static async create(basePath: string): Promise<EventStoreFile> {
+    const filePath = join(basePath, 'events.jsonl');
 
-  async init(): Promise<void> {
-    if (this.dataFolderDoesntExist()) {
-      this.makeDataFolder(this.basePath);
+    if (!existsSync(basePath)) {
+      mkdirSync(basePath, { recursive: true });
     }
-    this.filePath = join(this.basePath, 'events.jsonl');
-    if (!existsSync(this.filePath)) {
-      await this.write('');
+
+    if (!existsSync(filePath)) {
+      await appendFile(filePath, '');
     }
+
+    return new EventStoreFile(filePath);
   }
 
   async write(content: string): Promise<void> {
@@ -61,13 +62,5 @@ export class EventStoreFile {
 
   async unlock(): Promise<void> {
     await unlock(this.filePath);
-  }
-
-  private makeDataFolder(basePath: string): void {
-    mkdirSync(basePath, { recursive: true });
-  }
-
-  private dataFolderDoesntExist(): boolean {
-    return !existsSync(this.basePath);
   }
 }

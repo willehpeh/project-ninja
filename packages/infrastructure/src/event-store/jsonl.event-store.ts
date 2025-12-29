@@ -16,15 +16,14 @@ type JsonlEventStoreOptions = {
 export class JsonlEventStore implements EventStore {
 
   private _globalPosition = 0;
-  private readonly _eventStoreFile: EventStoreFile;
+  private _eventStoreFile!: EventStoreFile;
 
-  constructor(opts: JsonlEventStoreOptions,
+  constructor(private readonly _opts: JsonlEventStoreOptions,
               private readonly _timestampProvider: TimestampProvider = new SystemTimestampProvider()) {
-    this._eventStoreFile = new EventStoreFile(opts.basePath);
   }
 
   async init(): Promise<void> {
-    await this._eventStoreFile.init();
+    this._eventStoreFile = await EventStoreFile.create(this._opts.basePath);
     await this.setGlobalPositionFromEvents();
   }
 
