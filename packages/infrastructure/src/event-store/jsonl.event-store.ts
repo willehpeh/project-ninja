@@ -17,7 +17,6 @@ export class JsonlEventStore implements EventStore {
   async init(): Promise<void> {
     await this._eventStoreFile.init();
     await this.setGlobalPositionFromEvents();
-    return;
   }
 
   async append(events: NewEvent[], condition: AppendCondition = AppendCondition.none()): Promise<AppendResult> {
