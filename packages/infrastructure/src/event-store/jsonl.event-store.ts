@@ -20,10 +20,10 @@ export class JsonlEventStore implements EventStore {
   }
 
   async append(events: NewEvent[], condition: AppendCondition = AppendCondition.none()): Promise<AppendResult> {
-    condition.checkIfMetForPosition(await this.lastPositionForTags(condition.tags));
     await this._eventStoreFile.lock();
 
     try {
+      condition.checkIfMetForPosition(await this.lastPositionForTags(condition.tags));
       await this._eventStoreFile.write(this.toStoredEvents(events, this._globalPosition));
       this._globalPosition += events.length;
 
