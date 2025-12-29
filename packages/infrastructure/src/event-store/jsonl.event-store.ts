@@ -1,11 +1,4 @@
-import {
-  AppendCondition,
-  AppendResult,
-  ConcurrencyError,
-  EventStore,
-  NewEvent,
-  StoredEvent
-} from '@ninja-4-vs/application';
+import { AppendCondition, AppendResult, EventStore, NewEvent, StoredEvent } from '@ninja-4-vs/application';
 import { EventStoreFile } from './event-store-file';
 
 type JsonlEventStoreOptions = {
@@ -31,9 +24,7 @@ export class JsonlEventStore implements EventStore {
     await this._eventStoreFile.lock();
 
     try {
-      if (condition.expectedLastPosition > 0) {
-        await this.validatePositionForConditionTags(condition);
-      }
+      condition.checkIfMetForPosition(await this.lastPositionForTags(condition.tags));
       const startPosition = this._globalPosition;
       const storedEventsString = this.convertToStoredEventsString(events, startPosition);
       await this._eventStoreFile.write(storedEventsString);
@@ -49,27 +40,14 @@ export class JsonlEventStore implements EventStore {
       await this._eventStoreFile.unlock();
     }
   }
-
-  private async validatePositionForConditionTags(condition: AppendCondition) {
-    const actualPosition = await this.lastPositionForTags(condition.tags);
-
-    if (actualPosition !== condition.expectedLastPosition) {
-      throw new ConcurrencyError(
-        condition.tags,
-        condition.expectedLastPosition,
-        actualPosition
-      );
-    }
-  }
-
   globalPosition(): Promise<number> {
     return Promise.resolve(this._globalPosition);
   }
 
-  async lastPositionForTags(tags: string[]): Promise<number | undefined> {
+  async lastPositionForTags(tags: string[]): Promise<number> {
     const events = await this.queryByTags(tags);
     if (events.length === 0) {
-      return undefined;
+      return 0;
     }
     return events[events.length - 1].position;
   }

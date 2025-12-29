@@ -1,6 +1,6 @@
 import { JsonlEventStore } from '@ninja-4-vs/infrastructure';
 import { existsSync, rmSync } from 'fs';
-import { NewEvent, StoredEvent } from '@ninja-4-vs/application';
+import { AppendCondition, NewEvent, StoredEvent } from '@ninja-4-vs/application';
 import { readFile, writeFile } from 'fs/promises';
 
 describe('JSONL event store', () => {
@@ -289,7 +289,8 @@ describe('JSONL event store', () => {
         user: 'test'
       }
     };
-    await expect((eventStore.append([newEvent], { tags: ['test'], expectedLastPosition: 1 }))).rejects.toThrow();
+    const condition = new AppendCondition(['test'], 1);
+    await expect((eventStore.append([newEvent], condition))).rejects.toThrow();
   });
 
   afterEach(() => {

@@ -1,3 +1,5 @@
+import { ConcurrencyError } from './errors';
+
 export class AppendCondition {
   readonly tags: string[];
   readonly expectedLastPosition: number;
@@ -9,5 +11,12 @@ export class AppendCondition {
 
   static none(): AppendCondition {
     return new AppendCondition([], 0);
+  }
+
+  checkIfMetForPosition(actualLastPosition: number | undefined): void {
+    if (actualLastPosition === this.expectedLastPosition) {
+      return;
+    }
+    throw new ConcurrencyError(this.tags, this.expectedLastPosition, actualLastPosition);
   }
 }
