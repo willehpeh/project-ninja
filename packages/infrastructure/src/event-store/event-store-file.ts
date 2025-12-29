@@ -26,7 +26,15 @@ export class EventStoreFile {
     return appendFile(this.filePath, content);
   }
 
-  async *readLines(fromPosition?: number, limit?: number): AsyncIterable<string> {
+  async readLines(fromPosition?: number, limit?: number): Promise<string[]> {
+    const lines: string[] = [];
+    for await (const line of this.readLinesStream(fromPosition, limit)) {
+      lines.push(line);
+    }
+    return lines;
+  }
+
+  private async *readLinesStream(fromPosition?: number, limit?: number): AsyncIterable<string> {
     const rl = createInterface({
       input: createReadStream(this.filePath),
       crlfDelay: Infinity

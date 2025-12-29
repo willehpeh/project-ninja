@@ -58,20 +58,15 @@ export class JsonlEventStore implements EventStore {
   }
 
   async readAll(fromPosition?: number, limit?: number): Promise<StoredEvent[]> {
-    const events: StoredEvent[] = [];
-    let i = 0;
+    const lines = await this._eventStoreFile.readLines(fromPosition, limit);
 
-    for await (const line of this._eventStoreFile.readLines(fromPosition, limit)) {
+    return lines.map((line, i) => {
       try {
-        const event: StoredEvent = JSON.parse(line);
-        events.push(event);
+        return JSON.parse(line) as StoredEvent;
       } catch {
         throw new CorruptionError((fromPosition ?? 0) + i + 1, 'Corrupt JSON');
       }
-      i++;
-    }
-
-    return events;
+    });
   }
 
   private toStoredEvents(events: NewEvent[], startPosition: number): string {
