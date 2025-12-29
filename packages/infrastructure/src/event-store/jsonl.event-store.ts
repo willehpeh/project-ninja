@@ -20,25 +20,22 @@ export class JsonlEventStore implements EventStore {
   }
 
   async append(events: NewEvent[], condition: AppendCondition = AppendCondition.none()): Promise<AppendResult> {
+    condition.checkIfMetForPosition(await this.lastPositionForTags(condition.tags));
     await this._eventStoreFile.lock();
 
     try {
-      condition.checkIfMetForPosition(await this.lastPositionForTags(condition.tags));
-      const startPosition = this._globalPosition;
-      const storedEventsString = this.convertToStoredEventsString(events, startPosition);
-      await this._eventStoreFile.write(storedEventsString);
-
-      const newPosition = startPosition + events.length;
-      this._globalPosition = newPosition;
+      await this._eventStoreFile.write(this.toStoredEvents(events, this._globalPosition));
+      this._globalPosition += events.length;
 
       return {
-        lastPosition: newPosition,
+        lastPosition: this._globalPosition,
         eventsWritten: events.length
       };
     } finally {
       await this._eventStoreFile.unlock();
     }
   }
+
   globalPosition(): Promise<number> {
     return Promise.resolve(this._globalPosition);
   }
@@ -71,7 +68,7 @@ export class JsonlEventStore implements EventStore {
     return events;
   }
 
-  private convertToStoredEventsString(events: NewEvent[], startPosition: number): string {
+  private toStoredEvents(events: NewEvent[], startPosition: number): string {
     const lines: string[] = [];
 
     for (let i = 0; i < events.length; i++) {
