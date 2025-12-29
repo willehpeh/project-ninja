@@ -11,8 +11,7 @@ describe('JSONL event store', () => {
   describe('Appending events', () => {
 
     beforeEach(async () => {
-      eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
-      await eventStore.init();
+      eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
     });
 
     it('should append an event', async () => {
@@ -53,8 +52,7 @@ describe('JSONL event store', () => {
   describe('Startup logic', () => {
 
     it('should create the folder', async () => {
-      eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
-      await eventStore.init();
+      eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
       expect(existsSync(testEventFolderPath)).toBe(true);
     });
 
@@ -77,8 +75,7 @@ describe('JSONL event store', () => {
         }
       ];
       await writeEventFileWith(existingEvents);
-      const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
-      await eventStore.init();
+      const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
       const globalPosition = await eventStore.globalPosition();
       expect(globalPosition).toBe(2);
     });
@@ -104,8 +101,7 @@ describe('JSONL event store', () => {
         }
       ];
       await writeEventFileWith(existingEvents);
-      const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
-      await eventStore.init();
+      const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
       const events = await eventStore.readAll();
       expect(events).toEqual(existingEvents);
     });
@@ -129,8 +125,7 @@ describe('JSONL event store', () => {
         }
       ];
       await writeEventFileWith(existingEvents);
-      const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
-      await eventStore.init();
+      const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
       const events = await eventStore.readAll(2);
       expect(events).toEqual(existingEvents.slice(1));
     });
@@ -176,8 +171,7 @@ describe('JSONL event store', () => {
       }
     ];
     await writeEventFileWith(existingEvents);
-    const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
-    await eventStore.init();
+    const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
 
     const events = await eventStore.queryByTags(['test1']);
     expect(events).toEqual([
@@ -205,8 +199,7 @@ describe('JSONL event store', () => {
       }
     ];
     await writeEventFileWith(existingEvents);
-    const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
-    await eventStore.init();
+    const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
 
     const events = await eventStore.queryByTags(['not-a-tag']);
     expect(events).toEqual([]);
@@ -252,8 +245,7 @@ describe('JSONL event store', () => {
       }
     ];
     await writeEventFileWith(existingEvents);
-    const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
-    await eventStore.init();
+    const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
 
     const lastPosition = await eventStore.lastPositionForTags(['test2']);
     expect(lastPosition).toEqual(5);
@@ -278,8 +270,7 @@ describe('JSONL event store', () => {
       }
     ];
     await writeEventFileWith(existingEvents);
-    const eventStore = new JsonlEventStore({ basePath: testEventFolderPath });
-    await eventStore.init();
+    const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
 
     const newEvent: NewEvent = {
       type: 'test-event',

@@ -11,20 +11,24 @@ import { SystemTimestampProvider, TimestampProvider } from './timestamp.provider
 
 type JsonlEventStoreOptions = {
   basePath: string;
+  timestampProvider?: TimestampProvider;
 };
 
 export class JsonlEventStore implements EventStore {
 
   private _globalPosition = 0;
-  private _eventStoreFile!: EventStoreFile;
 
-  constructor(private readonly _opts: JsonlEventStoreOptions,
-              private readonly _timestampProvider: TimestampProvider = new SystemTimestampProvider()) {
-  }
+  private constructor(
+    private readonly _eventStoreFile: EventStoreFile,
+    private readonly _timestampProvider: TimestampProvider
+  ) {}
 
-  async init(): Promise<void> {
-    this._eventStoreFile = await EventStoreFile.create(this._opts.basePath);
-    await this.setGlobalPositionFromEvents();
+  static async create(opts: JsonlEventStoreOptions): Promise<JsonlEventStore> {
+    const eventStoreFile = await EventStoreFile.create(opts.basePath);
+    const timestampProvider = opts.timestampProvider ?? new SystemTimestampProvider();
+    const store = new JsonlEventStore(eventStoreFile, timestampProvider);
+    await store.setGlobalPositionFromEvents();
+    return store;
   }
 
   async append(events: NewEvent[], condition: AppendCondition = AppendCondition.none()): Promise<AppendResult> {
