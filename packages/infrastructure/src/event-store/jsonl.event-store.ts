@@ -1,4 +1,4 @@
-import { AppendCondition, AppendResult, EventStore, NewEvent, StoredEvent } from '@ninja-4-vs/application';
+import { AppendCondition, AppendResult, CorruptionError, EventStore, NewEvent, StoredEvent } from '@ninja-4-vs/application';
 import { EventStoreFile } from './event-store-file';
 
 type JsonlEventStoreOptions = {
@@ -59,10 +59,16 @@ export class JsonlEventStore implements EventStore {
 
   async readAll(fromPosition?: number, limit?: number): Promise<StoredEvent[]> {
     const events: StoredEvent[] = [];
+    let i = 0;
 
     for await (const line of this._eventStoreFile.readLines(fromPosition, limit)) {
-      const event: StoredEvent = JSON.parse(line);
-      events.push(event);
+      try {
+        const event: StoredEvent = JSON.parse(line);
+        events.push(event);
+      } catch {
+        throw new CorruptionError((fromPosition ?? 0) + i + 1, 'Corrupt JSON');
+      }
+      i++;
     }
 
     return events;
