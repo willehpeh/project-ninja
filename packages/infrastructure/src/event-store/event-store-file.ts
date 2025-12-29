@@ -19,7 +19,6 @@ export class EventStoreFile {
     if (!existsSync(this.filePath)) {
       await this.write('');
     }
-    return;
   }
 
   async write(content: string): Promise<void> {
