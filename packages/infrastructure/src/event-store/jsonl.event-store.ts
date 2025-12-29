@@ -7,6 +7,7 @@ import {
   StoredEvent
 } from '@ninja-4-vs/application';
 import { EventStoreFile } from './event-store-file';
+import { SystemTimestampProvider, TimestampProvider } from './timestamp.provider';
 
 type JsonlEventStoreOptions = {
   basePath: string;
@@ -17,7 +18,8 @@ export class JsonlEventStore implements EventStore {
   private _globalPosition = 0;
   private readonly _eventStoreFile: EventStoreFile;
 
-  constructor(opts: JsonlEventStoreOptions) {
+  constructor(opts: JsonlEventStoreOptions,
+              private readonly _timestampProvider: TimestampProvider = new SystemTimestampProvider()) {
     this._eventStoreFile = new EventStoreFile(opts.basePath);
   }
 
@@ -80,7 +82,7 @@ export class JsonlEventStore implements EventStore {
     return events
       .map((event, i) => JSON.stringify({
         position: startPosition + i + 1,
-        timestamp: new Date().toISOString(),
+        timestamp: this._timestampProvider.now(),
         ...(event)
       }))
       .join('\n') + '\n';
