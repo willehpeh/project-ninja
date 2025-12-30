@@ -11,6 +11,4 @@ export abstract class EventStore {
   abstract lastPositionForTags(tags: string[]): Promise<number | undefined>;
 
   abstract readAll(fromPosition?: number, limit?: number): Promise<StoredEvent[]>;
-
-  abstract globalPosition(): Promise<number>;
 }

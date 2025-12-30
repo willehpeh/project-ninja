@@ -16,10 +16,6 @@ export class InMemoryEventStore implements EventStore {
     return Promise.resolve({ lastPosition: currentLastPosition + events.length, eventsWritten: events.length });
   }
 
-  globalPosition(): Promise<number> {
-    return Promise.resolve(this.events.length);
-  }
-
   async lastPositionForTags(tags: string[]): Promise<number> {
     const events = await this.queryByTags(tags);
     return events[events.length - 1]?.position ?? 0;

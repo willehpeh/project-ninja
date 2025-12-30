@@ -48,10 +48,6 @@ export class JsonlEventStore implements EventStore {
     }
   }
 
-  globalPosition(): Promise<number> {
-    return Promise.resolve(this._globalPosition);
-  }
-
   async lastPositionForTags(tags: string[]): Promise<number> {
     const events = await this.queryByTags(tags);
     if (events.length === 0) {
@@ -76,7 +72,8 @@ export class JsonlEventStore implements EventStore {
       try {
         return JSON.parse(line) as StoredEvent;
       } catch {
-        throw new CorruptionError((fromPosition ?? 0) + i + 1, 'Corrupt JSON');
+        const corruptedPosition = (fromPosition ?? 1) + i;
+        throw new CorruptionError(corruptedPosition, 'Corrupt JSON');
       }
     });
   }
@@ -92,9 +89,12 @@ export class JsonlEventStore implements EventStore {
   }
 
   private async setGlobalPositionFromEvents(): Promise<void> {
-    const events = await this.readAll();
-    if (events.length > 0) {
-      this._globalPosition = events[events.length - 1].position;
+    const lines = await this._eventStoreFile.readLines();
+    if (lines.length === 0) {
+      return;
     }
+
+    const lastEvent: StoredEvent = JSON.parse(lines[lines.length - 1]);
+    this._globalPosition = lastEvent.position;
   }
 }

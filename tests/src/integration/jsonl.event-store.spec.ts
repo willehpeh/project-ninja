@@ -56,29 +56,12 @@ describe('JSONL event store', () => {
       expect(existsSync(testEventFolderPath)).toBe(true);
     });
 
-    it('should retrieve the global position from an existing file', async () => {
-      const existingEvents: StoredEvent[] = [
-        {
-          position: 1,
-          timestamp: '2021-01-01T00:00:00.000Z',
-          type: 'test-event',
-          tags: ['test'],
-          payload: { message: 'test' },
-          meta: { user: 'test' }
-        },
-        {
-          position: 2,
-          timestamp: '2021-01-02T00:00:00.000Z',
-          type: 'test-event-2',
-          tags: ['test'],
-          payload: { message: 'test-2' },
-        }
-      ];
-      await writeEventFileWith(existingEvents);
-      const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
-      const globalPosition = await eventStore.globalPosition();
-      expect(globalPosition).toBe(2);
+    it('should create the file if it does not exist', async () => {
+      eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
+      const filePath = `${ testEventFolderPath }/events.jsonl`;
+      expect(existsSync(filePath)).toBe(true);
     });
+
   });
 
   describe('Querying events', () => {
