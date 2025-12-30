@@ -188,52 +188,6 @@ describe('JSONL event store', () => {
     expect(events).toEqual([]);
   });
 
-  it('should return the last position for a set of tags', async () => {
-    const existingEvents: StoredEvent[] = [
-      {
-        position: 1,
-        timestamp: '2021-01-01T00:00:00.000Z',
-        type: 'test-event',
-        tags: ['test1'],
-        payload: { message: 'test' },
-        meta: { user: 'test' }
-      },
-      {
-        position: 2,
-        timestamp: '2021-01-02T00:00:00.000Z',
-        type: 'test-event-2',
-        tags: ['test2'],
-        payload: { message: 'test-2' },
-      },
-      {
-        position: 3,
-        timestamp: '2021-01-03T00:00:00.000Z',
-        type: 'test-event-3',
-        tags: ['test2'],
-        payload: { message: 'test-3' },
-      },
-      {
-        position: 4,
-        timestamp: '2021-01-04T00:00:00.000Z',
-        type: 'test-event-4',
-        tags: ['test3'],
-        payload: { message: 'test-4' },
-      },
-      {
-        position: 5,
-        timestamp: '2021-01-05T00:00:00.000Z',
-        type: 'test-event-5',
-        tags: ['test1', 'test2'],
-        payload: { message: 'test-5' },
-      }
-    ];
-    await writeEventFileWith(existingEvents);
-    const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
-
-    const lastPosition = await eventStore.lastPositionForTags(['test2']);
-    expect(lastPosition).toEqual(5);
-  });
-
   it('should fail to append an event when the expected position is before the real position', async () => {
     const existingEvents: StoredEvent[] = [
       {

@@ -12,13 +12,11 @@ export class InMemoryEventStore implements EventStore {
     }
     const timestamp = new Date().toISOString();
     const currentLastPosition = this.events.length;
-    this.events = [...this.events, ...events.map((e, i) => ({ position: currentLastPosition + i + 1, timestamp, ...e }))];
+    this.events = [...this.events, ...events.map((e, i) => ({
+      position: currentLastPosition + i + 1,
+      timestamp, ...e
+    }))];
     return Promise.resolve({ lastPosition: currentLastPosition + events.length, eventsWritten: events.length });
-  }
-
-  async lastPositionForTags(tags: string[]): Promise<number> {
-    const events = await this.queryByTags(tags);
-    return events[events.length - 1]?.position ?? 0;
   }
 
   queryByTags(tags: string[], fromPosition = 1): Promise<StoredEvent[]> {
@@ -27,7 +25,19 @@ export class InMemoryEventStore implements EventStore {
   }
 
   readAll(fromPosition = 1, limit?: number): Promise<StoredEvent[]> {
-    return Promise.resolve(this.events.slice(fromPosition - 1, limit));
+    const startIndex = fromPosition - 1;
+    const endIndex = limit ? startIndex + limit : undefined;
+    return Promise.resolve(this.events.slice(startIndex, endIndex));
+  }
+
+  async eventsOfTypes(types: string[], fromPosition?: number): Promise<StoredEvent[]> {
+    const allEvents = await this.readAll(fromPosition);
+    return allEvents.filter(event => types.includes(event.type));
+  }
+
+  private async lastPositionForTags(tags: string[]): Promise<number> {
+    const events = await this.queryByTags(tags);
+    return events[events.length - 1]?.position ?? 0;
   }
 
 

@@ -21,7 +21,8 @@ export class JsonlEventStore implements EventStore {
   private constructor(
     private readonly _eventStoreFile: EventStoreFile,
     private readonly _timestampProvider: TimestampProvider
-  ) {}
+  ) {
+  }
 
   static async create(opts: JsonlEventStoreOptions): Promise<JsonlEventStore> {
     const eventStoreFile = await EventStoreFile.create(opts.basePath);
@@ -48,14 +49,6 @@ export class JsonlEventStore implements EventStore {
     }
   }
 
-  async lastPositionForTags(tags: string[]): Promise<number> {
-    const events = await this.queryByTags(tags);
-    if (events.length === 0) {
-      return 0;
-    }
-    return events[events.length - 1].position;
-  }
-
   async queryByTags(tags: string[], fromPosition?: number): Promise<StoredEvent[]> {
     const allEvents = await this.readAll(fromPosition);
     const tagSet = new Set(tags);
@@ -76,6 +69,19 @@ export class JsonlEventStore implements EventStore {
         throw new CorruptionError(corruptedPosition, 'Corrupt JSON');
       }
     });
+  }
+
+  async eventsOfTypes(types: string[], fromPosition?: number): Promise<StoredEvent[]> {
+    const allEvents = await this.readAll(fromPosition);
+    return allEvents.filter(event => types.includes(event.type));
+  }
+
+  private async lastPositionForTags(tags: string[]): Promise<number> {
+    const events = await this.queryByTags(tags);
+    if (events.length === 0) {
+      return 0;
+    }
+    return events[events.length - 1].position;
   }
 
   private serialize(events: NewEvent[], startPosition: number): string {

@@ -8,7 +8,7 @@ export abstract class EventStore {
 
   abstract queryByTags(tags: string[], fromPosition?: number): Promise<StoredEvent[]>;
 
-  abstract lastPositionForTags(tags: string[]): Promise<number | undefined>;
-
   abstract readAll(fromPosition?: number, limit?: number): Promise<StoredEvent[]>;
+
+  abstract eventsOfTypes(types: string[], fromPosition?: number): Promise<StoredEvent[]>;
 }
