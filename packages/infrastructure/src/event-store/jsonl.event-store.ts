@@ -9,7 +9,7 @@ import {
 import { EventStoreFile } from './event-store-file';
 import { SystemTimestampProvider, TimestampProvider } from './timestamp.provider';
 
-type JsonlEventStoreOptions = {
+export type JsonlEventStoreOptions = {
   basePath: string;
   timestampProvider?: TimestampProvider;
 };
