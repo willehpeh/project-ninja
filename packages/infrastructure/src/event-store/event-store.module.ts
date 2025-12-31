@@ -7,6 +7,7 @@ export class EventStoreModule {
   static forRoot(opts: JsonlEventStoreOptions): DynamicModule {
     return {
       module: EventStoreModule,
+      global: true,
       providers: [{
         provide: EventStore,
         useFactory: async () => await JsonlEventStore.create(opts)

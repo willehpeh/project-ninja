@@ -10,6 +10,9 @@ import { TeamModule } from './delivery/teams/team.module';
       basePath: './data'
     }),
     TeamModule
+  ],
+  exports: [
+    EventStoreModule
   ]
 })
 export class AppModule {

@@ -1,12 +1,11 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { AppendCondition, AuthContext, EventStore, NewEvent } from '../../../common';
+import { AppendCondition, EventStore, NewEvent } from '../../../common';
 import { AddTeamCommand } from './add-team.command';
 
 @CommandHandler(AddTeamCommand)
 export class AddTeamCommandHandler implements ICommandHandler<AddTeamCommand> {
 
-  constructor(private readonly store: EventStore,
-              private readonly authContext: AuthContext) {
+  constructor(private readonly store: EventStore) {
   }
 
   async execute(command: AddTeamCommand): Promise<void> {
@@ -18,7 +17,7 @@ export class AddTeamCommandHandler implements ICommandHandler<AddTeamCommand> {
         `teamName:${ command.props.name }`
       ],
       meta: {
-        user: this.authContext.userId
+        user: 'this.authContext.userId'
       }
     };
     const condition = new AppendCondition([`teamName:${ command.props.name }`], 0);
