@@ -3,7 +3,9 @@
   "$schema": "../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "tests/src",
   "projectType": "library",
-  "tags": ["layer:tests"],
+  "tags": [
+    "layer:tests"
+  ],
   "// targets": "to see all targets run: nx show project tests --web",
   "targets": {}
 }

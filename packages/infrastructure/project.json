@@ -3,7 +3,9 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/infrastructure/src",
   "projectType": "library",
-  "tags": ["layer:infrastructure"],
+  "tags": [
+    "layer:infrastructure"
+  ],
   "// targets": "to see all targets run: nx show project infrastructure --web",
   "targets": {}
 }
