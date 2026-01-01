@@ -1,4 +1,5 @@
 import { AppendCondition, AppendResult, EventStore, NewEvent, StoredEvent } from '@ninja-4-vs/application';
+import { Observable, of } from 'rxjs';
 
 export class InMemoryEventStore implements EventStore {
   events: StoredEvent[] = [];
@@ -38,6 +39,10 @@ export class InMemoryEventStore implements EventStore {
   private async lastPositionForTags(tags: string[]): Promise<number> {
     const events = await this.queryByTags(tags);
     return events[events.length - 1]?.position ?? 0;
+  }
+
+  currentEventStream(): Observable<StoredEvent> {
+    return of();
   }
 
 

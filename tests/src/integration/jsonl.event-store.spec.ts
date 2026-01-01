@@ -2,6 +2,7 @@ import { JsonlEventStore } from '@ninja-4-vs/infrastructure';
 import { existsSync, rmSync } from 'fs';
 import { AppendCondition, NewEvent, StoredEvent } from '@ninja-4-vs/application';
 import { readFile, writeFile } from 'fs/promises';
+import { take, tap } from 'rxjs';
 
 describe('JSONL event store', () => {
   let eventStore: JsonlEventStore;
@@ -219,6 +220,45 @@ describe('JSONL event store', () => {
     };
     const condition = new AppendCondition(['test'], 1);
     await expect((eventStore.append([newEvent], condition))).rejects.toThrow();
+  });
+
+  it('should only emit newly appended events', async () => {
+    const existingEvents: StoredEvent[] = [
+      {
+        position: 1,
+        timestamp: '2021-01-01T00:00:00.000Z',
+        type: 'test-event',
+        tags: ['test'],
+        payload: { message: 'test' },
+        meta: { user: 'test' }
+      },
+      {
+        position: 2,
+        timestamp: '2021-01-02T00:00:00.000Z',
+        type: 'test-event-2',
+        tags: ['test'],
+        payload: { message: 'test-2' },
+      }
+    ];
+    await writeEventFileWith(existingEvents);
+    const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
+    const newEvent: NewEvent = {
+      type: 'test-event',
+      tags: ['test'],
+      payload: { message: 'test' },
+      meta: {
+        user: 'test'
+      }
+    };
+    eventStore.currentEventStream().pipe(
+      take(1),
+      tap(event => {
+        expect(event).toMatchObject(newEvent);
+        expect(event.position).toBe(3);
+      })
+    ).subscribe();
+
+    await eventStore.append([newEvent]);
   });
 
   afterEach(() => {
