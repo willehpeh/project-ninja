@@ -8,8 +8,7 @@ describe('Add Team', () => {
 
   beforeEach(async () => {
     fakeEventStore = new InMemoryEventStore();
-    const authContext = { userId: 'user1', permissions: [] };
-    handler = new AddTeamCommandHandler(fakeEventStore, authContext);
+    handler = new AddTeamCommandHandler(fakeEventStore);
 
     command = new AddTeamCommand({
       id: '1',

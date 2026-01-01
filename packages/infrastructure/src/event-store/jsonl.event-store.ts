@@ -1,3 +1,4 @@
+import { Observable, Subject } from 'rxjs';
 import {
   AppendCondition,
   AppendResult,
@@ -17,6 +18,7 @@ export type JsonlEventStoreOptions = {
 export class JsonlEventStore implements EventStore {
 
   private _globalPosition = 0;
+  private readonly _eventStream = new Subject<StoredEvent>();
 
   private constructor(
     private readonly _eventStoreFile: EventStoreFile,
@@ -36,8 +38,11 @@ export class JsonlEventStore implements EventStore {
     await this._eventStoreFile.lock();
 
     try {
-      condition.checkIfMetForPosition(await this.lastPositionForTags(condition.tags));
-      await this._eventStoreFile.write(this.serialize(events, this._globalPosition));
+      await this.validateCondition(condition);
+      const serializedEvents = this.serializeEvents(events, this._globalPosition);
+      const stringifiedEvents = this.stringifyEvents(serializedEvents);
+      await this._eventStoreFile.write(stringifiedEvents);
+      serializedEvents.forEach(event => this._eventStream.next(event));
       this._globalPosition += events.length;
 
       return {
@@ -47,6 +52,10 @@ export class JsonlEventStore implements EventStore {
     } finally {
       await this._eventStoreFile.unlock();
     }
+  }
+
+  private stringifyEvents(serializedEvents: StoredEvent[]) {
+    return serializedEvents.map(event => JSON.stringify(event)).join('\n') + '\n';
   }
 
   async queryByTags(tags: string[], fromPosition?: number): Promise<StoredEvent[]> {
@@ -76,6 +85,15 @@ export class JsonlEventStore implements EventStore {
     return allEvents.filter(event => types.includes(event.type));
   }
 
+  currentEventStream(): Observable<StoredEvent> {
+    return this._eventStream.asObservable();
+  }
+
+  private async validateCondition(condition: AppendCondition) {
+    const actualLastPosition = await this.lastPositionForTags(condition.tags);
+    condition.checkIfMetForPosition(actualLastPosition);
+  }
+
   private async lastPositionForTags(tags: string[]): Promise<number> {
     const events = await this.queryByTags(tags);
     if (events.length === 0) {
@@ -84,14 +102,13 @@ export class JsonlEventStore implements EventStore {
     return events[events.length - 1].position;
   }
 
-  private serialize(events: NewEvent[], startPosition: number): string {
+  private serializeEvents(events: NewEvent[], startPosition: number): StoredEvent[] {
     return events
-      .map((event, i) => JSON.stringify({
+      .map((event, i) => ({
         position: startPosition + i + 1,
         timestamp: this._timestampProvider.now(),
         ...(event)
-      }))
-      .join('\n') + '\n';
+      }));
   }
 
   private async setGlobalPositionFromEvents(): Promise<void> {

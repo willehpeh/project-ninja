@@ -1,3 +1,4 @@
+import { Observable } from 'rxjs';
 import { NewEvent } from './new-event';
 import { AppendCondition } from './append-condition';
 import { AppendResult } from './append-result';
@@ -11,4 +12,6 @@ export abstract class EventStore {
   abstract readAll(fromPosition?: number, limit?: number): Promise<StoredEvent[]>;
 
   abstract eventsOfTypes(types: string[], fromPosition?: number): Promise<StoredEvent[]>;
+
+  abstract currentEventStream(): Observable<StoredEvent>;
 }
