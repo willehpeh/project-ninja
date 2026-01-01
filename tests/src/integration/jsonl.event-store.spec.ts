@@ -4,6 +4,31 @@ import { AppendCondition, NewEvent, StoredEvent } from '@ninja-4-vs/application'
 import { readFile, writeFile } from 'fs/promises';
 import { take, tap } from 'rxjs';
 
+const TEST_STORED_EVENTS = [
+  {
+    position: 1,
+    timestamp: '2021-01-01T00:00:00.000Z',
+    type: 'test-event',
+    tags: ['test'],
+    payload: { message: 'test' },
+    meta: { user: 'test' }
+  },
+  {
+    position: 2,
+    timestamp: '2021-01-02T00:00:00.000Z',
+    type: 'test-event-2',
+    tags: ['test'],
+    payload: { message: 'test-2' },
+  }
+];
+const TEST_NEW_EVENT = {
+  type: 'test-event',
+  tags: ['test'],
+  payload: { message: 'test' },
+  meta: {
+    user: 'test'
+  }
+};
 describe('JSONL event store', () => {
   let eventStore: JsonlEventStore;
   const testEventFolderPath = 'tmp/data';
@@ -16,23 +41,15 @@ describe('JSONL event store', () => {
     });
 
     it('should append an event', async () => {
-      const newEvent: NewEvent = {
-        type: 'test-event',
-        tags: ['test'],
-        payload: { message: 'test' },
-        meta: {
-          user: 'test'
-        }
-      };
-      await eventStore.append([newEvent]);
+      await eventStore.append([TEST_NEW_EVENT]);
       const events = await eventsInJsonlFile();
-      expect(events).toEqual([{ ...newEvent, position: 1, timestamp: expect.any(String) }]);
+      expect(events).toEqual([{ ...TEST_NEW_EVENT, position: 1, timestamp: expect.any(String) }]);
     });
 
     it('should append multiple events', async () => {
       const newEvents: NewEvent[] = [
-        { type: 'test-event-1', tags: ['test'], payload: { message: 'test-1' } },
-        { type: 'test-event-2', tags: ['test'], payload: { message: 'test-2' } }
+        TEST_NEW_EVENT,
+        { ...TEST_NEW_EVENT, payload: { message: 'test-2' } }
       ];
       await eventStore.append(newEvents);
       const events = await eventsInJsonlFile();
@@ -67,51 +84,15 @@ describe('JSONL event store', () => {
 
   describe('Querying events', () => {
     it('should retrieve all events', async () => {
-      const existingEvents: StoredEvent[] = [
-        {
-          position: 1,
-          timestamp: '2021-01-01T00:00:00.000Z',
-          type: 'test-event',
-          tags: ['test'],
-          payload: { message: 'test' },
-          meta: { user: 'test' }
-        },
-        {
-          position: 2,
-          timestamp: '2021-01-02T00:00:00.000Z',
-          type: 'test-event-2',
-          tags: ['test'],
-          payload: { message: 'test-2' },
-        }
-      ];
-      await writeEventFileWith(existingEvents);
-      const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
+      eventStore = await eventStoreWithEvents(TEST_STORED_EVENTS);
       const events = await eventStore.readAll();
-      expect(events).toEqual(existingEvents);
+      expect(events).toEqual(TEST_STORED_EVENTS);
     });
 
     it('should retrieve events from a given position', async () => {
-      const existingEvents: StoredEvent[] = [
-        {
-          position: 1,
-          timestamp: '2021-01-01T00:00:00.000Z',
-          type: 'test-event',
-          tags: ['test'],
-          payload: { message: 'test' },
-          meta: { user: 'test' }
-        },
-        {
-          position: 2,
-          timestamp: '2021-01-02T00:00:00.000Z',
-          type: 'test-event-2',
-          tags: ['test'],
-          payload: { message: 'test-2' },
-        }
-      ];
-      await writeEventFileWith(existingEvents);
-      const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
+      eventStore = await eventStoreWithEvents(TEST_STORED_EVENTS);
       const events = await eventStore.readAll(2);
-      expect(events).toEqual(existingEvents.slice(1));
+      expect(events).toEqual(TEST_STORED_EVENTS.slice(1));
     });
   });
 
@@ -154,8 +135,7 @@ describe('JSONL event store', () => {
         payload: { message: 'test-5' },
       }
     ];
-    await writeEventFileWith(existingEvents);
-    const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
+    eventStore = await eventStoreWithEvents(existingEvents);
 
     const events = await eventStore.queryByTags(['test1']);
     expect(events).toEqual([
@@ -165,100 +145,28 @@ describe('JSONL event store', () => {
   });
 
   it('should not retrieve events if tags do not match', async () => {
-    const existingEvents: StoredEvent[] = [
-      {
-        position: 1,
-        timestamp: '2021-01-01T00:00:00.000Z',
-        type: 'test-event',
-        tags: ['test'],
-        payload: { message: 'test' },
-        meta: { user: 'test' }
-      },
-      {
-        position: 2,
-        timestamp: '2021-01-02T00:00:00.000Z',
-        type: 'test-event-2',
-        tags: ['test'],
-        payload: { message: 'test-2' },
-      }
-    ];
-    await writeEventFileWith(existingEvents);
-    const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
-
+    eventStore = await eventStoreWithEvents(TEST_STORED_EVENTS);
     const events = await eventStore.queryByTags(['not-a-tag']);
     expect(events).toEqual([]);
   });
 
   it('should fail to append an event when the expected position is before the real position', async () => {
-    const existingEvents: StoredEvent[] = [
-      {
-        position: 1,
-        timestamp: '2021-01-01T00:00:00.000Z',
-        type: 'test-event',
-        tags: ['test'],
-        payload: { message: 'test' },
-        meta: { user: 'test' }
-      },
-      {
-        position: 2,
-        timestamp: '2021-01-02T00:00:00.000Z',
-        type: 'test-event-2',
-        tags: ['test'],
-        payload: { message: 'test-2' },
-      }
-    ];
-    await writeEventFileWith(existingEvents);
-    const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
-
-    const newEvent: NewEvent = {
-      type: 'test-event',
-      tags: ['test'],
-      payload: { message: 'test' },
-      meta: {
-        user: 'test'
-      }
-    };
+    eventStore = await eventStoreWithEvents(TEST_STORED_EVENTS);
     const condition = new AppendCondition(['test'], 1);
-    await expect((eventStore.append([newEvent], condition))).rejects.toThrow();
+    await expect((eventStore.append([TEST_NEW_EVENT], condition))).rejects.toThrow();
   });
 
   it('should only emit newly appended events', async () => {
-    const existingEvents: StoredEvent[] = [
-      {
-        position: 1,
-        timestamp: '2021-01-01T00:00:00.000Z',
-        type: 'test-event',
-        tags: ['test'],
-        payload: { message: 'test' },
-        meta: { user: 'test' }
-      },
-      {
-        position: 2,
-        timestamp: '2021-01-02T00:00:00.000Z',
-        type: 'test-event-2',
-        tags: ['test'],
-        payload: { message: 'test-2' },
-      }
-    ];
-    await writeEventFileWith(existingEvents);
-    const eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
-    const newEvent: NewEvent = {
-      type: 'test-event',
-      tags: ['test'],
-      payload: { message: 'test' },
-      meta: {
-        user: 'test'
-      }
-    };
+    eventStore = await eventStoreWithEvents(TEST_STORED_EVENTS);
     eventStore.currentEventStream().pipe(
       take(1),
       tap(event => {
-        expect(event).toMatchObject(newEvent);
+        expect(event).toMatchObject(TEST_NEW_EVENT);
         expect(event.position).toBe(3);
       })
     ).subscribe();
 
-    await eventStore.append([newEvent]);
+    await eventStore.append([TEST_NEW_EVENT]);
   });
 
   afterEach(() => {
@@ -277,5 +185,10 @@ describe('JSONL event store', () => {
       .split('\n')
       .slice(0, -1)
       .map(event => JSON.parse(event));
+  }
+
+  async function eventStoreWithEvents(events: StoredEvent[]) {
+    await writeEventFileWith(events);
+    return JsonlEventStore.create({ basePath: testEventFolderPath });
   }
 });
