@@ -1,4 +1,4 @@
-import { Observable, Subject } from 'rxjs';
+import { Observable, ReplaySubject } from 'rxjs';
 import {
   AppendCondition,
   AppendResult,
@@ -19,7 +19,7 @@ export type JsonlEventStoreOptions = {
 export class JsonlEventStore implements EventStore {
 
   private _globalPosition = 0;
-  private readonly _eventStream = new Subject<StoredEvent>();
+  private readonly _eventStream = new ReplaySubject<StoredEvent>();
 
   private constructor(
     private readonly _eventStoreFile: EventStoreFile,
@@ -32,8 +32,16 @@ export class JsonlEventStore implements EventStore {
     const eventStoreFile = await EventStoreFile.create(opts.basePath);
     const timestampProvider = opts.timestampProvider ?? new SystemTimestampProvider();
     const store = new JsonlEventStore(eventStoreFile, timestampProvider, authContext);
-    await store.setGlobalPositionFromEvents();
+    await store.initialize();
     return store;
+  }
+
+  private async initialize(): Promise<void> {
+    const events = await this.readAll();
+    events.forEach(event => this._eventStream.next(event));
+    if (events.length > 0) {
+      this._globalPosition = events[events.length - 1].position;
+    }
   }
 
   async append(events: NewEvent[], condition: AppendCondition = AppendCondition.none()): Promise<AppendResult> {
@@ -87,7 +95,7 @@ export class JsonlEventStore implements EventStore {
     return allEvents.filter(event => types.includes(event.type));
   }
 
-  currentEventStream(): Observable<StoredEvent> {
+  eventStream(): Observable<StoredEvent> {
     return this._eventStream.asObservable();
   }
 
@@ -117,13 +125,4 @@ export class JsonlEventStore implements EventStore {
       }));
   }
 
-  private async setGlobalPositionFromEvents(): Promise<void> {
-    const lines = await this._eventStoreFile.readLines();
-    if (lines.length === 0) {
-      return;
-    }
-
-    const lastEvent: StoredEvent = JSON.parse(lines[lines.length - 1]);
-    this._globalPosition = lastEvent.position;
   }
-}

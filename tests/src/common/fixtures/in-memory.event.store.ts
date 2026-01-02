@@ -1,8 +1,9 @@
 import { AppendCondition, AppendResult, EventStore, NewEvent, StoredEvent } from '@ninja-4-vs/application';
-import { Observable, of } from 'rxjs';
+import { Observable, ReplaySubject } from 'rxjs';
 
 export class InMemoryEventStore implements EventStore {
   events: StoredEvent[] = [];
+  private readonly _eventStream = new ReplaySubject<StoredEvent>();
 
   async append(events: NewEvent[], condition?: AppendCondition): Promise<AppendResult> {
     if (condition) {
@@ -13,10 +14,12 @@ export class InMemoryEventStore implements EventStore {
     }
     const timestamp = new Date().toISOString();
     const currentLastPosition = this.events.length;
-    this.events = [...this.events, ...events.map((e, i) => ({
+    const storedEvents = events.map((e, i) => ({
       position: currentLastPosition + i + 1,
       timestamp, ...e
-    }))];
+    }));
+    this.events = [...this.events, ...storedEvents];
+    storedEvents.forEach(event => this._eventStream.next(event));
     return Promise.resolve({ lastPosition: currentLastPosition + events.length, eventsWritten: events.length });
   }
 
@@ -41,8 +44,8 @@ export class InMemoryEventStore implements EventStore {
     return events[events.length - 1]?.position ?? 0;
   }
 
-  currentEventStream(): Observable<StoredEvent> {
-    return of();
+  eventStream(): Observable<StoredEvent> {
+    return this._eventStream.asObservable();
   }
 
 

@@ -2,7 +2,7 @@ import { JsonlEventStore } from '@ninja-4-vs/infrastructure';
 import { existsSync, rmSync } from 'fs';
 import { AppendCondition, AuthContext, NewEvent, StoredEvent } from '@ninja-4-vs/application';
 import { readFile, writeFile } from 'fs/promises';
-import { take, tap } from 'rxjs';
+import { TestScheduler } from 'rxjs/testing';
 import { FakeAuthContext } from '../common/fixtures/fake-auth-context';
 
 const TEST_STORED_EVENTS = [
@@ -168,17 +168,24 @@ describe('JSONL event store', () => {
     await expect((eventStore.append([TEST_NEW_EVENT], condition))).rejects.toThrow();
   });
 
-  it('should only emit newly appended events', async () => {
-    eventStore = await eventStoreWithEvents(TEST_STORED_EVENTS);
-    eventStore.currentEventStream().pipe(
-      take(1),
-      tap(event => {
-        expect(event).toMatchObject(TEST_NEW_EVENT);
-        expect(event.position).toBe(3);
-      })
-    ).subscribe();
+  it('should emit historical and newly appended events', async () => {
+    const testScheduler = new TestScheduler((actual, expected) => {
+      expect(actual).toEqual(expected);
+    });
 
+    eventStore = await eventStoreWithEvents(TEST_STORED_EVENTS);
     await eventStore.append([TEST_NEW_EVENT]);
+
+    testScheduler.run(({ expectObservable }) => {
+      expectObservable(eventStore.eventStream()).toBe(
+        '(abc)',
+        {
+          a: TEST_STORED_EVENTS[0],
+          b: TEST_STORED_EVENTS[1],
+          c: expect.objectContaining({ position: 3 })
+        }
+      );
+    });
   });
 
   afterEach(() => {

@@ -13,5 +13,5 @@ export abstract class EventStore {
 
   abstract eventsOfTypes(types: string[], fromPosition?: number): Promise<StoredEvent[]>;
 
-  abstract currentEventStream(): Observable<StoredEvent>;
+  abstract eventStream(): Observable<StoredEvent>;
 }
