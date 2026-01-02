@@ -1,5 +1,5 @@
 import { DynamicModule, Module } from '@nestjs/common';
-import { EventStore } from '@ninja-4-vs/application';
+import { AuthContext, EventStore } from '@ninja-4-vs/application';
 import { JsonlEventStore, JsonlEventStoreOptions } from './jsonl.event-store';
 
 @Module({})
@@ -10,7 +10,8 @@ export class EventStoreModule {
       global: true,
       providers: [{
         provide: EventStore,
-        useFactory: async () => await JsonlEventStore.create(opts)
+        inject: [AuthContext],
+        useFactory: async (authContext: AuthContext) => await JsonlEventStore.create(opts, authContext)
       }],
       exports: [EventStore]
     };

@@ -2,6 +2,7 @@ import { Observable, Subject } from 'rxjs';
 import {
   AppendCondition,
   AppendResult,
+  AuthContext,
   CorruptionError,
   EventStore,
   NewEvent,
@@ -22,14 +23,15 @@ export class JsonlEventStore implements EventStore {
 
   private constructor(
     private readonly _eventStoreFile: EventStoreFile,
-    private readonly _timestampProvider: TimestampProvider
+    private readonly _timestampProvider: TimestampProvider,
+    private readonly _authContext: AuthContext
   ) {
   }
 
-  static async create(opts: JsonlEventStoreOptions): Promise<JsonlEventStore> {
+  static async create(opts: JsonlEventStoreOptions, authContext: AuthContext): Promise<JsonlEventStore> {
     const eventStoreFile = await EventStoreFile.create(opts.basePath);
     const timestampProvider = opts.timestampProvider ?? new SystemTimestampProvider();
-    const store = new JsonlEventStore(eventStoreFile, timestampProvider);
+    const store = new JsonlEventStore(eventStoreFile, timestampProvider, authContext);
     await store.setGlobalPositionFromEvents();
     return store;
   }
@@ -107,7 +109,11 @@ export class JsonlEventStore implements EventStore {
       .map((event, i) => ({
         position: startPosition + i + 1,
         timestamp: this._timestampProvider.now(),
-        ...(event)
+        ...event,
+        meta: {
+          ...event.meta,
+          userId: this._authContext.userId()
+        }
       }));
   }
 

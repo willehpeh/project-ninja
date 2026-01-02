@@ -1,8 +1,9 @@
 import { JsonlEventStore } from '@ninja-4-vs/infrastructure';
 import { existsSync, rmSync } from 'fs';
-import { AppendCondition, NewEvent, StoredEvent } from '@ninja-4-vs/application';
+import { AppendCondition, AuthContext, NewEvent, StoredEvent } from '@ninja-4-vs/application';
 import { readFile, writeFile } from 'fs/promises';
 import { take, tap } from 'rxjs';
+import { FakeAuthContext } from '../common/fixtures/fake-auth-context';
 
 const TEST_STORED_EVENTS = [
   {
@@ -31,19 +32,29 @@ const TEST_NEW_EVENT = {
 };
 describe('JSONL event store', () => {
   let eventStore: JsonlEventStore;
+  let authContext: AuthContext;
   const testEventFolderPath = 'tmp/data';
   const testEventFilePath = `${ testEventFolderPath }/events.jsonl`;
+
+  beforeEach(() => {
+    authContext = new FakeAuthContext();
+  });
 
   describe('Appending events', () => {
 
     beforeEach(async () => {
-      eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
+      eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath }, authContext);
     });
 
     it('should append an event', async () => {
       await eventStore.append([TEST_NEW_EVENT]);
       const events = await eventsInJsonlFile();
-      expect(events).toEqual([{ ...TEST_NEW_EVENT, position: 1, timestamp: expect.any(String) }]);
+      expect(events).toEqual([{
+        ...TEST_NEW_EVENT,
+        position: 1,
+        timestamp: expect.any(String),
+        meta: { ...TEST_NEW_EVENT.meta, userId: 'test-user' }
+      }]);
     });
 
     it('should append multiple events', async () => {
@@ -56,7 +67,8 @@ describe('JSONL event store', () => {
       expect(events).toEqual(newEvents.map((event, index) => ({
         ...event,
         position: index + 1,
-        timestamp: expect.any(String)
+        timestamp: expect.any(String),
+        meta: { ...event.meta, userId: 'test-user' }
       })));
     });
 
@@ -70,12 +82,12 @@ describe('JSONL event store', () => {
   describe('Startup logic', () => {
 
     it('should create the folder', async () => {
-      eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
+      eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath }, authContext);
       expect(existsSync(testEventFolderPath)).toBe(true);
     });
 
     it('should create the file if it does not exist', async () => {
-      eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath });
+      eventStore = await JsonlEventStore.create({ basePath: testEventFolderPath }, authContext);
       const filePath = `${ testEventFolderPath }/events.jsonl`;
       expect(existsSync(filePath)).toBe(true);
     });
@@ -189,6 +201,6 @@ describe('JSONL event store', () => {
 
   async function eventStoreWithEvents(events: StoredEvent[]) {
     await writeEventFileWith(events);
-    return JsonlEventStore.create({ basePath: testEventFolderPath });
+    return JsonlEventStore.create({ basePath: testEventFolderPath }, authContext);
   }
 });
