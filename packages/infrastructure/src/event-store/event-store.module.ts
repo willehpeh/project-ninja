@@ -8,11 +8,12 @@ export class EventStoreModule {
     return {
       module: EventStoreModule,
       global: true,
-      providers: [{
-        provide: EventStore,
-        inject: [AuthContext],
-        useFactory: async (authContext: AuthContext) => await JsonlEventStore.create(opts, authContext)
-      }],
+      providers: [
+        {
+          provide: EventStore,
+          inject: [AuthContext],
+          useFactory: async (authContext: AuthContext) => await JsonlEventStore.create(opts, authContext)
+        }],
       exports: [EventStore]
     };
   }

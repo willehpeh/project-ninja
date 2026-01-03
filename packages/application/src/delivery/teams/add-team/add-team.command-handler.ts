@@ -16,9 +16,6 @@ export class AddTeamCommandHandler implements ICommandHandler<AddTeamCommand> {
         `team:${ command.props.id }`,
         `teamName:${ command.props.name }`
       ],
-      meta: {
-        user: 'this.authContext.userId'
-      }
     };
     const condition = new AppendCondition([`teamName:${ command.props.name }`], 0);
     await this.store.append([teamAddedEvent], condition);

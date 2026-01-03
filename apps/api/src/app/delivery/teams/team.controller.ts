@@ -8,8 +8,7 @@ export class TeamController {
   }
 
   @Get()
-  async testTeam(): Promise<string> {
-    await this.teamService.addTeam();
-    return 'Hell yeah';
+  testTeam(): Promise<void> {
+    return this.teamService.addTeam();
   }
 }

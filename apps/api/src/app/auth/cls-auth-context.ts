@@ -10,7 +10,7 @@ export class ClsAuthContext extends AuthContext {
     super();
   }
 
-  get userId(): string {
+  userId(): string {
     return this.cls.get(CLS_USER_ID) ?? 'anonymous';
   }
 }

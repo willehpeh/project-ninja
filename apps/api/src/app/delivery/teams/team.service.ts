@@ -1,6 +1,6 @@
 import { CommandBus } from '@nestjs/cqrs';
-import { AddTeamCommand } from '@ninja-4-vs/application';
-import { Injectable } from '@nestjs/common';
+import { AddTeamCommand, ConcurrencyError } from '@ninja-4-vs/application';
+import { ConflictException, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class TeamService {
@@ -13,6 +13,12 @@ export class TeamService {
       id: 'test-id',
       description: 'Team description',
     });
-    await this.commandBus.execute(command)
+    try {
+      await this.commandBus.execute(command);
+    } catch (e) {
+      if (e instanceof ConcurrencyError) {
+        throw new ConflictException(e.message);
+      }
+    }
   }
 }
