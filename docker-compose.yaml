@@ -21,6 +21,8 @@ services:
       - "3000"
     depends_on:
       - kurrentdb.db
+    volumes:
+      - api-data:/app/data
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=PathPrefix(`/api`)"
@@ -69,5 +71,6 @@ services:
         target: /var/log/kurrentdb
 
 volumes:
+  api-data:
   kurrentdb-volume-data:
   kurrentdb-volume-logs:
