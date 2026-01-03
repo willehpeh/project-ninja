@@ -45,6 +45,10 @@ export default [
             {
               sourceTag: 'layer:api',
               onlyDependOnLibsWithTags: ['layer:application', 'layer:infrastructure']
+            },
+            {
+              sourceTag: 'layer:ui',
+              onlyDependOnLibsWithTags: ['layer:ui']
             }
           ]
         }

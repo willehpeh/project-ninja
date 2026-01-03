@@ -4,7 +4,9 @@
   "projectType": "application",
   "prefix": "ninja",
   "sourceRoot": "apps/frontend/src",
-  "tags": [],
+  "tags": [
+    "layer:ui"
+  ],
   "targets": {
     "build": {
       "executor": "@angular/build:application",
