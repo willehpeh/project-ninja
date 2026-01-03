@@ -7,11 +7,10 @@ export class TeamService {
   constructor(private readonly commandBus: CommandBus) {
   }
 
-  async addTeam(): Promise<void> {
+  async addTeam(name: string): Promise<void> {
     const command = new AddTeamCommand({
-      name: 'test',
-      id: 'test-id',
-      description: 'Team description',
+      name,
+      id: crypto.randomUUID(),
     });
     try {
       await this.commandBus.execute(command);
