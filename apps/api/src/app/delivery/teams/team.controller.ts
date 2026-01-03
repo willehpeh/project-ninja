@@ -8,7 +8,7 @@ export class TeamController {
   constructor(private readonly teamService: TeamService) {
   }
 
-  @Post()
+  @Post('add')
   testTeam(@Body() props: AddTeamDto): Promise<void> {
     return this.teamService.addTeam(props.name);
   }
