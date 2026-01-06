@@ -1,8 +1,19 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { HomeFacade } from './home.facade';
+import { Button } from '@ninja-4-vs/ui-elements';
 
 @Component({
+  imports: [
+    Button
+  ],
   template: `
-    <h1>Home</h1>
+    <ninja-button (click)="onAddTeam()">Add Team</ninja-button>
   `
 })
-export class DeliveryHome {}
+export class DeliveryHome {
+  private readonly homeFacade = inject(HomeFacade);
+
+  protected onAddTeam() {
+    this.homeFacade.addTeam('New Team');
+  }
+}
