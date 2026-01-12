@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { HomeFacade } from './home/home.facade';
+import { TeamSelectionFacade } from './team-selection/team-selection.facade';
 import { TeamsApi } from './teams-api';
 import { provideState } from '@ngrx/store';
 import * as fromTeams from './state/teams.reducer';
@@ -9,12 +9,12 @@ import { TeamsEffects } from './state/teams.effects';
 export const deliveryRoutes: Routes = [
   {
     path: '',
-    loadComponent: () => import('./home/home').then(c => c.DeliveryHome),
+    loadComponent: () => import('./team-selection/team-selection').then(c => c.TeamSelection),
     children: [
 
     ],
     providers: [
-      HomeFacade,
+      TeamSelectionFacade,
       TeamsApi,
       provideState(fromTeams.featureKey, fromTeams.reducer),
       provideEffects([TeamsEffects])
